@@ -9,20 +9,6 @@
 #ifndef DynamicData_DDConfig_h
 #define DynamicData_DDConfig_h
 
-
 typedef unsigned long long ULongLong;
-
-/*
-class DDConfig
-{
-public:
-    
-    DDConfig(const DDConfig&) = delete;
-    const DDConfig& operator=(const DDConfig&) = delete;
-
-    
-    
-};
-*/
 
 #endif

@@ -7,11 +7,8 @@
 //
 
 #include <iostream>
-#include "DDFunctStack.h"
 #include "DDMMapAllocator.h"
 #include "MMapWrapper.h"
-#include "DDClosureAllocator.h"
-#include "DDClosureStack.h"
 #include "DDContinuousID.h"
 #include "Tests.h"
 #include "DDIndex.h"

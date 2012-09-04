@@ -27,8 +27,6 @@
 /* Begin PBXFileReference section */
 		474E40A915E24B8C005E4572 /* DDConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDConfig.h; sourceTree = "<group>"; };
 		474E40AB15E25286005E4572 /* DDUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDUtils.h; sourceTree = "<group>"; };
-		474E40B415E3AA3F005E4572 /* DDClosureAllocator.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDClosureAllocator.h; sourceTree = "<group>"; };
-		474E40BD15E3B1A5005E4572 /* DDClosureStack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDClosureStack.h; sourceTree = "<group>"; };
 		474E40BE15E3DD46005E4572 /* DDContinuousID.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDContinuousID.h; sourceTree = "<group>"; };
 		474E40BF15ED3375005E4572 /* DDIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDIndex.h; sourceTree = "<group>"; };
 		47564A7015E11B6E0035CFED /* MMapWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMapWrapper.h; sourceTree = "<group>"; };
@@ -37,7 +35,6 @@
 		47FA6FFB15DBBE1700E9715E /* DynamicData */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DynamicData; sourceTree = BUILT_PRODUCTS_DIR; };
 		47FA6FFF15DBBE1700E9715E /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		47FA700115DBBE1700E9715E /* DynamicData.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = DynamicData.1; sourceTree = "<group>"; };
-		47FA700815DBC04900E9715E /* DDFunctStack.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDFunctStack.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,14 +69,11 @@
 			children = (
 				47FA6FFF15DBBE1700E9715E /* main.cpp */,
 				47FA700115DBBE1700E9715E /* DynamicData.1 */,
-				47FA700815DBC04900E9715E /* DDFunctStack.h */,
 				47762DD115DD342000223A73 /* DDMMapAllocator.h */,
 				47564A7015E11B6E0035CFED /* MMapWrapper.h */,
 				47564A7215E242700035CFED /* Tests.h */,
 				474E40A915E24B8C005E4572 /* DDConfig.h */,
 				474E40AB15E25286005E4572 /* DDUtils.h */,
-				474E40B415E3AA3F005E4572 /* DDClosureAllocator.h */,
-				474E40BD15E3B1A5005E4572 /* DDClosureStack.h */,
 				474E40BE15E3DD46005E4572 /* DDContinuousID.h */,
 				474E40BF15ED3375005E4572 /* DDIndex.h */,
 			);

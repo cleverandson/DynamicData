@@ -28,18 +28,6 @@ public:
     DDUtils(const DDUtils&) = delete;
     const DDUtils& operator=(const DDUtils&) = delete;
 
-    static void createFile(std::string filePath)
-    {
-        int fileHandle = open(filePath.c_str(), O_RDWR | O_TRUNC | O_CREAT, (mode_t)0600);
-        if (fileHandle == -1)
-        {
-            std::cout << "DDUtils: error in createFile." << std::endl;
-            exit(1);
-        }
-        
-        close(fileHandle);
-    }
-    
     static off_t fileSize(std::string filePath)
     {
         struct stat results;
