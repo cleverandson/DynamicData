@@ -21,9 +21,20 @@
 int main(int argc, const char * argv[])
 {
     //Tests::mmapSpeedTest();
-    Tests::testMMapWrapper();
+    //Tests::testMMapWrapper();
     //Tests::testDDMMapAllocator();
     //Tests::testDDContinuousID();
+    
+    Tests::testDDIndex(false);
+    //Tests::testDDIndex(true);
+    
+    //Tests::testDDIndex2(false);
+    //Tests::testDDIndex2(true);
+    
+    //Tests::testDDIndex3(false);
+    //Tests::testDDIndex3(true);
+    
+    //Tests::testFileSizes();
     
     return 0;
 }

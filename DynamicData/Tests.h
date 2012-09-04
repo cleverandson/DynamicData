@@ -11,6 +11,7 @@
 
 #include "MMapWrapper.h"
 #include "DDConfig.h"
+#include "DDIndex.h"
 
 class Tests
 {
@@ -92,7 +93,7 @@ public:
         }
         */
         
-        wmap.shrink(9988);
+        //wmap.shrinkSize(9);
         
         /*
         for (int i=0; i<10000; i++)
@@ -104,6 +105,160 @@ public:
         std::cout << "filesize_e_ " << wmap.fileSize() << std::endl;
         
         std::cout << "done " << std::endl;
+    }
+    
+    static void testFileSizes()
+    {
+        system("rm -r data");
+        
+        DDIndex<unsigned long, unsigned long> ddIndex(2, 0, 1, 2);
+        
+        for (int i = 0; i<10000; i++)
+        {
+            ddIndex.insertIdx(0, i);
+        }
+        
+        for (int i = 0; i<9950; i++)
+        {
+            ddIndex.deleteIdx(0);
+        }
+        
+        std::cout << "_done_ " << std::endl;
+    }
+    
+    
+    static void testDDIndex3(bool hasPersistData)
+    {
+        if (!hasPersistData) system("rm -r data");
+        
+        {
+            DDIndex<unsigned long, unsigned long> ddIndex(2, 0, 1, 2);
+            bool succeeded;
+            
+            std::list<unsigned long> refList;
+            
+            for (int i = 0; i<10000; i++)
+            {
+                if (!hasPersistData) ddIndex.insertIdx(0, i);
+                refList.push_front(i);
+            }
+            
+            std::cout << "__sleep " << std::endl;
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+            std::cout << "______ " << std::endl;
+            
+            int count = 0;
+            int index=0;
+            for(auto iter = refList.begin(); iter != refList.end(); iter++)
+            {
+                unsigned long ddVal = ddIndex.get(index, succeeded);
+                
+                //std::cout << "val__ " << ddVal << std::endl;
+                assert(*iter == ddVal);
+                
+                index++;
+                
+                if (count % 1000 == 0) std::cout << "__count__" << count << std::endl;
+                count++;
+            }
+            
+            std::cout << "_end_____ " << std::endl;
+            
+        }
+        
+    }
+    
+    static void testDDIndex2(bool hasPersistData)
+    {
+        if (!hasPersistData) system("rm -r data");
+        
+        DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
+        bool succeeded;
+        
+        std::list<unsigned long> refList;
+        
+        for (int i = 0; i<10000; i++)
+        {
+            if (!hasPersistData) ddIndex.insertIdx(0, i);
+            refList.push_front(i);
+        }
+        
+        if (!hasPersistData) ddIndex.deleteIdx(0);
+        refList.pop_front();
+        
+        if (!hasPersistData) ddIndex.deleteIdx(6);
+        
+        auto itr = refList.begin();
+        std::advance(itr,6);
+        refList.erase(itr);
+        
+        std::cout << "_11____" << std::endl;
+        
+        //if (!hasPersistData) ddIndex.mapFunctsDBug();
+        
+        std::cout << "_22____" << std::endl;
+        
+        
+        if (!hasPersistData) ddIndex.deleteIdx(6);
+        
+        itr = refList.begin();
+        std::advance(itr,6);
+        refList.erase(itr);
+        
+        //if (!hasPersistData) ddIndex.mapFunctsDBug();
+        
+        int index=0;
+        for(auto iter = refList.begin(); iter != refList.end(); iter++)
+        {
+            unsigned long ddVal = ddIndex.get(index, succeeded);
+            assert(*iter == ddVal);
+            
+            index++;
+        }
+        
+        std::cout << "____done____" << std::endl;
+    }
+    
+    static void testDDIndex(bool hasPersistData)
+    {
+        if (!hasPersistData) system("rm -r data");
+        
+        DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
+        bool succeeded;
+        
+        std::list<unsigned long> refList;
+        
+        if (!hasPersistData)  ddIndex.insertIdx(0,101);
+        refList.push_back(101);
+        
+        if (!hasPersistData) ddIndex.insertIdx(1,102);
+        refList.push_back(102);
+        
+        if (!hasPersistData) ddIndex.insertIdx(2,104);
+        refList.push_back(104);
+        
+        if (!hasPersistData) ddIndex.insertIdx(0,11111);
+        refList.push_front(11111);
+        
+        if (!hasPersistData) ddIndex.insertIdx(0,22222);
+        refList.push_front(22222);
+        
+        if (!hasPersistData) ddIndex.deleteIdx(0);
+        refList.pop_front();
+        
+        if (!hasPersistData) ddIndex.deleteIdx(0);
+        refList.pop_front();
+        
+        int index=0;
+        for(auto iter = refList.begin(); iter != refList.end(); iter++)
+        {
+            unsigned long ddVal = ddIndex.get(index, succeeded);
+            assert(*iter == ddVal);
+            
+            index++;
+        }
+        
+        std::cout << "____done____" << std::endl;
     }
     
     static void testDDMMapAllocator()

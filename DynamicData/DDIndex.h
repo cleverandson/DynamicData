@@ -11,6 +11,8 @@
 
 #include <list>
 #include <mutex>
+#include <atomic>
+#include <thread>
 
 #include "DDMMapAllocator.h"
 #include "DDContinuousID.h"
@@ -107,16 +109,29 @@ private:
         {
             if (_activeMapIdx == 0 || _activeMapIdx == 1)
             {
-                _mmapWrapper2->persist(idx, mappedIdx);
+                _mmapWrapper2->persistVal(idx, mappedIdx);
             }
             else
             {
-                _mmapWrapper1->persist(idx, mappedIdx);
+                _mmapWrapper1->persistVal(idx, mappedIdx);
             }
         }
         
+        void shrinkSize(IdxType size)
+        {
+            if (_activeMapIdx == 0 || _activeMapIdx == 1)
+            {
+                _mmapWrapper2->shrinkSize(size);
+            }
+            else
+            {
+                _mmapWrapper1->shrinkSize(size);
+            }
+        }
+        
+        
         //TODO check this potentially dangerous when application crashes.
-        void switchMMaps(IdxType nextSize)
+        void switchMMaps()
         {
             if (_activeMapIdx == 0 || _activeMapIdx == 1)
             {
@@ -126,7 +141,6 @@ private:
                 
                 header = _mmapWrapper2->getUserDataHeader();
                 header.done = true;
-                header.size = nextSize;
                 _mmapWrapper2->saveUserDataHeader(header);
                 
                 _activeMapIdx = 2;
@@ -139,7 +153,6 @@ private:
                 
                 header = _mmapWrapper1->getUserDataHeader();
                 header.done = true;
-                header.size = nextSize;
                 _mmapWrapper1->saveUserDataHeader(header);
                 
                 _activeMapIdx = 1;
@@ -156,9 +169,7 @@ private:
     class FuncData
     {
     public:
-        std::function<IdxType (IdxType inIdx)> closure;
-        std::function<IdxType (IdxType inIdx)> invClosure;
-        DDContinuousID<unsigned long> cid;
+        std::function<IdxType (IdxType inIdx, bool& done)> closure;
     };
     
     class YValMapHeader { };
@@ -169,25 +180,38 @@ public:
         _doubleSyncedMMapWrapper(scopeVal, idVal1, idVal2),
         _yValMMapWrapper(DDMMapAllocator<IdxType>::SHARED()->template getHandleFromDataStore<YType, YValMapHeader>(scopeVal, idVal3)),
         _size(_doubleSyncedMMapWrapper.size()),
-        _lastCid(0)
+        _shoutdownCount(0),
+        _reduceAndSwapThread(&DDIndex::reduceAndSwapMap,this)
     {
+    
+    }
+    
+    ~DDIndex()
+    {
+        _mutex.lock();
+        _mutex.unlock();
         
+        _shoutdownCount = 2;
+        
+        _reduceAndSwapThread.join();
     }
     
     DDIndex(const DDIndex&) = delete;
     const DDIndex& operator=(const DDIndex&) = delete;
     
-    YType get(IdxType idx, DDContinuousID<unsigned long> cid, bool& succeeded)
+    YType get(IdxType idx, bool& succeeded)
     {
+        succeeded = false;
         YType yVal;
         
         _mutex.lock();
         
-        succeeded = cid.value() == _lastCid.value();
-        
         if (idx < _size)
         {
-            yVal = _yValMMapWrapper->getVal(eval(idx));
+            idx = eval(idx, _funcDataVec);
+            
+            yVal = _yValMMapWrapper->getVal(idx);
+            succeeded = true;
         }
         
         _mutex.unlock();
@@ -195,113 +219,74 @@ public:
         return yVal;
     }
     
-    //TODO overrun check!
     void insertIdx(IdxType idx, YType value)
     {
-        _mutex.lock();
-        
-        IdxType yIdx = _yValMMapWrapper->size();
-        _yValMMapWrapper->persistVal(yIdx, value);
-        
-        
-        FuncData funcData;
-        
-        int size = _size + 1;
-        funcData.closure = [idx,size] (IdxType inIdx) -> IdxType
+        if (!_shoutdownCount)
         {
-            IdxType retIdx = inIdx;
+            assert(idx < _size + 1);
             
-            if (inIdx == idx)
-            {
-                retIdx = yIdx;
-            }
-            else if (inIdx > idx && inIdx < size)
-            {
-                retIdx = inIdx -1;
-            }
+            _mutex.lock();
             
-            return retIdx;
-        };
-        
-    
-        //TODO optimize size - 1 and idx - 1
-        funcData.invClosure = [idx, size] (IdxType inIdx) -> IdxType
-        {
-            IdxType retIdx = inIdx;
+            IdxType yIdx = _yValMMapWrapper->size();
+            _yValMMapWrapper->persistVal(yIdx, value);
             
-            if (inIdx == yIdx)
-            {
-                retIdx = idx;
-            }
-            else if (inIdx > idx - 1 && inIdx < size -1)
-            {
-                retIdx = inIdx + 1;
-            }
             
-            return retIdx;
-        };
-    
-        
-        funcData.cid = _lastCid;
-        
-        _lastCid++;
-        _size = size;
-        
-        _funcDataVec.push_back(funcData);
-        
-        _mutex.unlock();
+            FuncData funcData;
+            
+            _size++;
+            funcData.closure = [idx, yIdx] (IdxType inIdx, bool& done) -> IdxType
+            {
+                done = false;
+                IdxType retIdx = inIdx;
+                
+                if (inIdx == idx)
+                {
+                    retIdx = yIdx;
+                    done = true;
+                }
+                else if (inIdx > idx)
+                {
+                    retIdx = inIdx -1;
+                }
+                
+                return retIdx;
+            };
+            
+            _funcDataVec.push_front(funcData);
+            
+            _mutex.unlock();
+        }
     }
     
-    //TODO overrun check!
     void deleteIdx(IdxType idx)
     {
-        _mutex.lock();
-        
-        FuncData funcData;
-        
-        int size = _size - 1;
-        
-        funcData.closure = [idx, size] (IdxType inIdx) -> IdxType
+        if (!_shoutdownCount)
         {
-            IdxType retIdx = inIdx;
+            assert(idx < _size);
             
-            if (inIdx == size-1)
-            {
-                retIdx = idx;
-            }
-            else if (inIdx >= idx && inIdx < size-1)
-            {
-                retIdx = inIdx + 1;
-            }
-        };
-        
-        
-        funcData.invClosure = [idx, size] (IdxType inIdx) -> IdxType
-        {
-            IdxType retIdx = inIdx;
+            _mutex.lock();
             
-            if (inIdx == idx)
-            {
-                retIdx = size-1;
-            }
-            else if (inIdx > idx && inIdx < size)
-            {
-                retIdx = inIdx - 1;
-            }
+            FuncData funcData;
             
-            return retIdx;
-        };
-        
-        
-        funcData.cid = _lastCid;
-        
-        _lastCid++;
-        
-        _funcDataVec.push_back(funcData);
-        
-        _size = size;
-        
-        _mutex.unlock();
+            _size--;
+            
+            funcData.closure = [idx] (IdxType inIdx, bool& done) -> IdxType
+            {
+                done = false;
+                IdxType retIdx = inIdx;
+                
+                if (inIdx >= idx)
+                {
+                    retIdx = inIdx + 1;
+                }
+                
+                return retIdx;
+            };
+            
+            _funcDataVec.push_front(funcData);
+            
+            _mutex.unlock();
+        }
     }
     
     IdxType size()
@@ -326,13 +311,44 @@ private:
     
     
     std::list<FuncData> _funcDataVec;
-    DDContinuousID<unsigned long> _lastCid;
     std::mutex _mutex;
+    
+    std::atomic<int> _shoutdownCount;
+    
+    std::thread _reduceAndSwapThread;
     
     //optimization.
     //std::array<int, 3>
     
-    void asyncCaching()
+    void reduceAndSwapMap()
+    {
+        while(true)
+        {
+            size_t numberOfFuncts;
+            _mutex.lock();
+            numberOfFuncts = _funcDataVec.size();
+            _mutex.unlock();
+            
+            if (numberOfFuncts > 0)
+            {
+                mapFuncts();
+                //std::cout << "__reduced  " << std::endl;
+            }
+            else
+            {
+                //std::cout << "__sleep__  " << std::endl;
+                
+                if (_shoutdownCount > 1) _shoutdownCount--;
+                else if (_shoutdownCount == 1) break;
+                else
+                {
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                }
+            }
+        }
+    }
+    
+    void mapFuncts()
     {
         std::list<FuncData> cpyFuncDataVec;
         IdxType size;
@@ -341,73 +357,49 @@ private:
         
         //OPTIMIZATION?
         cpyFuncDataVec = _funcDataVec;
-        _size = size;
+        size = _size;
         
         _mutex.unlock();
         
         IdxType idx;
         
+        
         for (int i=0; i<size; i++)
         {
-            idx = eval(i);
-            _doubleSyncedMMapWrapper->persist(i, idx);
+            idx = eval(i, cpyFuncDataVec);
+            _doubleSyncedMMapWrapper.persist(i, idx);
         }
         
-        
-        //shrink _doubleSyncedMMapWrapper if needed.
-        
+        _doubleSyncedMMapWrapper.shrinkSize(size);
         
         _mutex.lock();
         
         
+        auto begItr = _funcDataVec.begin();
+        std::advance(begItr,_funcDataVec.size() - cpyFuncDataVec.size());
         
-        /*
-        //remove cached functs.
-        FuncData funcData;
-        while (true)
-        {
-            funcData = _funcDataVec.front;
-            _funcDataVec.pop_front();
+        _funcDataVec.erase(begItr, _funcDataVec.end());
         
-            
-        }
         
-        //garbage collect! necessary?
-        //switchMMaps(IdxType nextSize)
-        */
+        
+        _doubleSyncedMMapWrapper.switchMMaps();
         
         _mutex.unlock();
     }
     
-    IdxType eval(IdxType idx)
+    IdxType eval(IdxType idx, std::list<FuncData>& functDataList)
     {
-        IdxType retVal;
-        
-        for(auto& funcData : _funcDataVec)
+        bool done=false;
+        for(auto& funcData : functDataList)
         {
-            idx = funcData.closure(idx);
+            idx = funcData.closure(idx, done);
+            if (done) break;
         }
         
-        return _doubleSyncedMMapWrapper.get(idx);
-    }
-    
-    IdxType invEval(IdxType idx, DDContinuousID<unsigned long> cacheCid)
-    {
-        if (_doubleSyncedMMapWrapper.size() > idx)
-        {
-            idx = _doubleSyncedMMapWrapper.get(idx);
-        }
-        
-        for (auto rit=_funcDataVec.rbegin() ; rit < _funcDataVec.rend(); ++rit)
-        {
-            idx = rit->invClosure(idx);
-            
-            if (rit->cid == cacheCid) break;
-        }
+        if (!done) idx = _doubleSyncedMMapWrapper.get(idx);
         
         return idx;
     }
-    
 };
 
 #endif

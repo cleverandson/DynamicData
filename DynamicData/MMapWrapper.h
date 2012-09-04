@@ -105,14 +105,15 @@ public:
         writeMapSizeToFile();
     }
     
-    void shrink(IdxType shrinkSize)
+    void shrinkSize(IdxType size)
     {
-        assert(shrinkSize <= _mapSize);
-        
-        _mapSize -= shrinkSize;
-     
-        remapIfNeeded2();
-        writeMapSizeToFile();
+        if (size < _mapSize)
+        {
+            _mapSize = size;
+         
+            remapIfNeeded2();
+            writeMapSizeToFile();
+        }
     }
     
     IdxType size()

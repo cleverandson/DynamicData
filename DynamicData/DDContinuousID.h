@@ -36,10 +36,9 @@ public:
     }
     
     //TODO test this!
-    DDContinuousID& operator++()
+    void incr()
     {
         _value++;
-        return _value;
     }
                 
     static IdType bound()
