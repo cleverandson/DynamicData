@@ -118,6 +118,12 @@ public:
             ddIndex.insertIdx(0, i);
         }
         
+        
+        std::cout << "_s1_ " << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::cout << "_s2_ " << std::endl;
+        
+        
         for (int i = 0; i<9950; i++)
         {
             ddIndex.deleteIdx(0);

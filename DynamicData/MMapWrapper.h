@@ -89,7 +89,7 @@ public:
         writeMapSizeToFile();
     }
     
-    //TODO check if needed.
+    //TODO remove this.
     void deleteIdx(IdxType idx, std::function<void (IdxType oldIdx, IdxType remapIdx)> remapFunc)
     {
         assert(idx < _mapSize);

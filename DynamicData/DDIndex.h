@@ -85,6 +85,26 @@ private:
             return retIdx;
         }
         
+        IdxType getBack(IdxType idx)
+        {
+            IdxType retIdx;
+            
+            if (_activeMapIdx == 0)
+            {
+                retIdx = idx;
+            }
+            else if (_activeMapIdx == 1)
+            {
+                retIdx = _mmapWrapper2->getVal(idx);
+            }
+            else
+            {
+                retIdx = _mmapWrapper1->getVal(idx);
+            }
+            
+            return retIdx;
+        }
+        
         IdxType size()
         {
             IdxType size;
@@ -169,7 +189,7 @@ private:
     class FuncData
     {
     public:
-        std::function<IdxType (IdxType inIdx, bool& done)> closure;
+        std::function<IdxType (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal)> closure;
     };
     
     class YValMapHeader { };
@@ -206,11 +226,19 @@ public:
         
         _mutex.lock();
         
+        bool hasInsValue=false;
+        YType insYValue;
+        
         if (idx < _size)
         {
-            idx = eval(idx, _funcDataVec);
+            idx = eval(idx, _funcDataVec, hasInsValue, insYValue);
             
-            yVal = _yValMMapWrapper->getVal(idx);
+            if (hasInsValue)
+            {
+                yVal = insYValue;
+            }
+            else yVal = _yValMMapWrapper->getVal(idx);
+            
             succeeded = true;
         }
         
@@ -219,7 +247,7 @@ public:
         return yVal;
     }
     
-    void insertIdx(IdxType idx, YType value)
+    void insertIdx(IdxType idx, YType yValue)
     {
         if (!_shoutdownCount)
         {
@@ -227,22 +255,24 @@ public:
             
             _mutex.lock();
             
-            IdxType yIdx = _yValMMapWrapper->size();
-            _yValMMapWrapper->persistVal(yIdx, value);
+            //IdxType yIdx = _yValMMapWrapper->size();
+            //_yValMMapWrapper->persistVal(yIdx, yValue);
             
             
             FuncData funcData;
             
             _size++;
-            funcData.closure = [idx, yIdx] (IdxType inIdx, bool& done) -> IdxType
+            funcData.closure = [idx, yValue] (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal) -> IdxType
             {
-                done = false;
+                hasInsValue = false;
+                hasDelValue = false;
+                
                 IdxType retIdx = inIdx;
                 
                 if (inIdx == idx)
                 {
-                    retIdx = yIdx;
-                    done = true;
+                    insVal = yValue;
+                    hasInsValue = true;
                 }
                 else if (inIdx > idx)
                 {
@@ -268,11 +298,34 @@ public:
             
             FuncData funcData;
             
+            
+            /*
+            bool hasInsValue=false;
+            YType insYValue;
+            IdxType delIdx = eval(idx, _funcDataVec, hasInsValue, insYValue);
+            
+            if (!hasInsValue)
+            {
+                //assert(delIdx < _yValMMapWrapper->size());
+                
+                _deletedIdxs[delIdx] = true;
+            }
+            else
+            {
+                int i = 0;
+            }
+            */
+           
             _size--;
             
-            funcData.closure = [idx] (IdxType inIdx, bool& done) -> IdxType
+            funcData.closure = [idx] (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal) -> IdxType
             {
-                done = false;
+                hasInsValue = false;
+                
+                hasDelValue = true;
+                delVal = idx;
+                
+                
                 IdxType retIdx = inIdx;
                 
                 if (inIdx >= idx)
@@ -317,8 +370,9 @@ private:
     
     std::thread _reduceAndSwapThread;
     
-    //optimization.
-    //std::array<int, 3>
+    //std::map<IdxType, bool> _deletedIdxs;
+    
+    
     
     void reduceAndSwapMap()
     {
@@ -350,53 +404,199 @@ private:
     
     void mapFuncts()
     {
+        
         std::list<FuncData> cpyFuncDataVec;
-        IdxType size;
+        IdxType indexSize;
+        std::map<IdxType, bool> cpyDeletedIdxs;
+        
         
         _mutex.lock();
+        std::cout << "xxx" << std::endl;
         
         //OPTIMIZATION?
         cpyFuncDataVec = _funcDataVec;
-        size = _size;
+        indexSize = _size;
+        
+        /*
+        std::cout << " _11__ " << _deletedIdxs.size() << std::endl;
+        
+        //TODO OPT move rather than copy here.
+        cpyDeletedIdxs = _deletedIdxs;
+        _deletedIdxs.clear();
+        
+        std::cout << " _22__ " << cpyDeletedIdxs.size() << std::endl;
+        */
         
         _mutex.unlock();
         
         IdxType idx;
         
+        //
+        // defrag.
+        //gather deleted idxs
         
-        for (int i=0; i<size; i++)
+        //TODO optimize?
+        std::list<FuncData> cpyFuncDataVec2 = cpyFuncDataVec;
+        
+        IdxType dummyIdx;
+        bool hasInsValue;
+        YType yDummyVal;
+        
+        bool hasDelValue;
+        IdxType delVal;
+        
+        int functDataSize = cpyFuncDataVec2.size();
+        for (int i=0; i<functDataSize; i++)
         {
-            idx = eval(i, cpyFuncDataVec);
-            _doubleSyncedMMapWrapper.persist(i, idx);
+            cpyFuncDataVec2.front()(dummyIdx, hasInsValue, yDummyVal, hasDelValue, delVal);
+       
+            if (hasDelValue)
+            {
+                idx = eval(i, cpyFuncDataVec2, hasInsValue, yDummyVal);
+                
+                if (!hasInsValue)
+                {
+                    cpyDeletedIdxs[idx] = true;
+                }
+            }
+            
+            cpyFuncDataVec2.pop_front();
+        }
+        //
+        //
+        
+        
+        
+        hasInsValue=false;
+        YType insYValue;
+        
+        for (int i=0; i<indexSize; i++)
+        {
+            idx = eval(i, cpyFuncDataVec, hasInsValue, insYValue);
+            
+            if (hasInsValue)
+            {
+                IdxType insIdx = _yValMMapWrapper->size();
+                
+                _yValMMapWrapper->persistVal(insIdx, insYValue);
+                _doubleSyncedMMapWrapper.persist(i, insIdx);
+            }
+            else _doubleSyncedMMapWrapper.persist(i, idx);
         }
         
-        _doubleSyncedMMapWrapper.shrinkSize(size);
+        _doubleSyncedMMapWrapper.shrinkSize(indexSize);
+        
+        
+        
+        
+        
+        
+        //
+        //start defrag.
+        //
+        
+        std::cout << "__!!!! " << _yValMMapWrapper->size() << "  _  " << cpyDeletedIdxs.size() << "  _  " << indexSize << std::endl;
+        
+        assert(_yValMMapWrapper->size() - cpyDeletedIdxs.size() == indexSize);
+        
+        std::list<std::function<IdxType (IdxType inIdx)>> defragFuncts;
+        
+        
+        IdxType defractSize = cpyDeletedIdxs.size();
+        
+        
+        IdxType lidx;
+        for (IdxType i=0; i<defractSize; i++)
+        {
+            lidx = indexSize+i;
+            
+            if (cpyDeletedIdxs.count(lidx) == 0)
+            {
+                //TODO remove.
+                assert(cpyDeletedIdxs.size() > 0);
+                
+                IdxType cpyIdx = cpyDeletedIdxs.begin()->first;
+                
+                //TODO opt?
+                cpyDeletedIdxs.erase(cpyIdx);
+                
+                //std::cout << "____ " << lidx << "____" << i << " --- " << std::endl;
+                YType cpyYVal = _yValMMapWrapper->getVal(lidx);
+                
+                _yValMMapWrapper->persistVal(cpyIdx, cpyYVal);
+                
+                defragFuncts.push_back([lidx, cpyIdx] (IdxType inIdx) -> IdxType
+                   {
+                       IdxType retIdx = inIdx;
+                
+                       if (inIdx == lidx)
+                       {
+                           retIdx = cpyIdx;
+                       }
+                       
+                       return retIdx;
+                   }
+                );
+            }
+            else
+            {
+                cpyDeletedIdxs.erase(lidx);
+            }
+        }
+        
+        
+        for (int i=0; i<indexSize; i++)
+        {
+            idx = _doubleSyncedMMapWrapper.getBack(i);
+            
+            for (auto& func : defragFuncts)
+            {
+                idx = func(idx);
+            }
+            
+            _doubleSyncedMMapWrapper.persist(i, idx);
+        }
+        //
+        //end defrag.
+        //
+        
+        
+        
         
         _mutex.lock();
         
-        
         auto begItr = _funcDataVec.begin();
         std::advance(begItr,_funcDataVec.size() - cpyFuncDataVec.size());
-        
         _funcDataVec.erase(begItr, _funcDataVec.end());
-        
-        
         
         _doubleSyncedMMapWrapper.switchMMaps();
         
+        //
+        // defrag.
+        //
+        _yValMMapWrapper->shrinkSize(indexSize);
+        //
+        //
+        
+        std::cout << "_****_ " << indexSize << "  ___  " << std::endl;
+        
         _mutex.unlock();
+        
     }
     
-    IdxType eval(IdxType idx, std::list<FuncData>& functDataList)
+    IdxType eval(IdxType idx, std::list<FuncData>& functDataList, bool& hasInsValue, YType& yInsValue)
     {
-        bool done=false;
+        //not needed in this context.
+        bool hasDelValue;
+        IdxType delVal;
+        
         for(auto& funcData : functDataList)
         {
-            idx = funcData.closure(idx, done);
-            if (done) break;
+            idx = funcData.closure(idx, hasInsValue, yInsValue, hasDelValue, delVal);
+            if (hasInsValue) break;
         }
         
-        if (!done) idx = _doubleSyncedMMapWrapper.get(idx);
+        if (!hasInsValue) idx = _doubleSyncedMMapWrapper.get(idx);
         
         return idx;
     }

@@ -22,13 +22,13 @@ int main(int argc, const char * argv[])
     //Tests::testDDMMapAllocator();
     //Tests::testDDContinuousID();
     
-    Tests::testDDIndex(false);
+    //Tests::testDDIndex(false);
     //Tests::testDDIndex(true);
     
     //Tests::testDDIndex2(false);
     //Tests::testDDIndex2(true);
     
-    //Tests::testDDIndex3(false);
+    Tests::testDDIndex3(false);
     //Tests::testDDIndex3(true);
     
     //Tests::testFileSizes();
