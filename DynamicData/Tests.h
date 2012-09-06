@@ -234,6 +234,7 @@ public:
         
         std::list<unsigned long> refList;
         
+        
         if (!hasPersistData)  ddIndex.insertIdx(0,101);
         refList.push_back(101);
         
@@ -242,6 +243,11 @@ public:
         
         if (!hasPersistData) ddIndex.insertIdx(2,104);
         refList.push_back(104);
+        
+        
+        std::cout << "_s1_ " << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "_s2_ " << std::endl;
         
         if (!hasPersistData) ddIndex.insertIdx(0,11111);
         refList.push_front(11111);

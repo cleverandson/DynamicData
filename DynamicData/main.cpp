@@ -28,7 +28,7 @@ int main(int argc, const char * argv[])
     //Tests::testDDIndex2(false);
     //Tests::testDDIndex2(true);
     
-    Tests::testDDIndex3(false);
+    //Tests::testDDIndex3(false);
     //Tests::testDDIndex3(true);
     
     //Tests::testFileSizes();

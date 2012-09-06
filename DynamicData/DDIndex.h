@@ -297,24 +297,6 @@ public:
             _mutex.lock();
             
             FuncData funcData;
-            
-            
-            /*
-            bool hasInsValue=false;
-            YType insYValue;
-            IdxType delIdx = eval(idx, _funcDataVec, hasInsValue, insYValue);
-            
-            if (!hasInsValue)
-            {
-                //assert(delIdx < _yValMMapWrapper->size());
-                
-                _deletedIdxs[delIdx] = true;
-            }
-            else
-            {
-                int i = 0;
-            }
-            */
            
             _size--;
             
@@ -407,6 +389,8 @@ private:
         
         std::list<FuncData> cpyFuncDataVec;
         IdxType indexSize;
+        
+        //TODO rename in deletedIdxs
         std::map<IdxType, bool> cpyDeletedIdxs;
         
         
@@ -417,15 +401,6 @@ private:
         cpyFuncDataVec = _funcDataVec;
         indexSize = _size;
         
-        /*
-        std::cout << " _11__ " << _deletedIdxs.size() << std::endl;
-        
-        //TODO OPT move rather than copy here.
-        cpyDeletedIdxs = _deletedIdxs;
-        _deletedIdxs.clear();
-        
-        std::cout << " _22__ " << cpyDeletedIdxs.size() << std::endl;
-        */
         
         _mutex.unlock();
         
@@ -438,29 +413,35 @@ private:
         //TODO optimize?
         std::list<FuncData> cpyFuncDataVec2 = cpyFuncDataVec;
         
-        IdxType dummyIdx;
+        IdxType dummyIdx=0;
         bool hasInsValue;
         YType yDummyVal;
         
         bool hasDelValue;
         IdxType delVal;
         
-        int functDataSize = cpyFuncDataVec2.size();
+        size_t functDataSize = cpyFuncDataVec2.size();
         for (int i=0; i<functDataSize; i++)
         {
-            cpyFuncDataVec2.front()(dummyIdx, hasInsValue, yDummyVal, hasDelValue, delVal);
-       
+            cpyFuncDataVec2.front().closure(dummyIdx, hasInsValue, yDummyVal, hasDelValue, delVal);
+            cpyFuncDataVec2.pop_front();
+            
             if (hasDelValue)
             {
-                idx = eval(i, cpyFuncDataVec2, hasInsValue, yDummyVal);
-                
-                if (!hasInsValue)
+                if (cpyFuncDataVec2.size() > 0)
                 {
-                    cpyDeletedIdxs[idx] = true;
+                    idx = eval(delVal, cpyFuncDataVec2, hasInsValue, yDummyVal);
+                
+                    if (!hasInsValue)
+                    {
+                        cpyDeletedIdxs[idx] = true;
+                    }
+                }
+                else
+                {
+                    cpyDeletedIdxs[delVal] = true;
                 }
             }
-            
-            cpyFuncDataVec2.pop_front();
         }
         //
         //
