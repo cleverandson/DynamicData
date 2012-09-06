@@ -255,10 +255,6 @@ public:
             
             _mutex.lock();
             
-            //IdxType yIdx = _yValMMapWrapper->size();
-            //_yValMMapWrapper->persistVal(yIdx, yValue);
-            
-            
             FuncData funcData;
             
             _size++;
@@ -343,17 +339,10 @@ private:
     std::unique_ptr<MMapWrapper<IdxType, YType, YValMapHeader>> _yValMMapWrapper;
     
     IdxType _size;
-    
-    
     std::list<FuncData> _funcDataVec;
     std::mutex _mutex;
-    
     std::atomic<int> _shoutdownCount;
-    
     std::thread _reduceAndSwapThread;
-    
-    //std::map<IdxType, bool> _deletedIdxs;
-    
     
     
     void reduceAndSwapMap()
@@ -368,12 +357,9 @@ private:
             if (numberOfFuncts > 0)
             {
                 mapFuncts();
-                //std::cout << "__reduced  " << std::endl;
             }
             else
             {
-                //std::cout << "__sleep__  " << std::endl;
-                
                 if (_shoutdownCount > 1) _shoutdownCount--;
                 else if (_shoutdownCount == 1) break;
                 else
@@ -386,7 +372,6 @@ private:
     
     void mapFuncts()
     {
-        
         std::list<FuncData> cpyFuncDataVec;
         IdxType indexSize;
         
@@ -395,14 +380,13 @@ private:
         
         
         _mutex.lock();
-        std::cout << "xxx" << std::endl;
         
         //OPTIMIZATION?
         cpyFuncDataVec = _funcDataVec;
         indexSize = _size;
         
-        
         _mutex.unlock();
+        
         
         IdxType idx;
         
@@ -476,8 +460,6 @@ private:
         //start defrag.
         //
         
-        std::cout << "__!!!! " << _yValMMapWrapper->size() << "  _  " << cpyDeletedIdxs.size() << "  _  " << indexSize << std::endl;
-        
         assert(_yValMMapWrapper->size() - cpyDeletedIdxs.size() == indexSize);
         
         std::list<std::function<IdxType (IdxType inIdx)>> defragFuncts;
@@ -501,7 +483,6 @@ private:
                 //TODO opt?
                 cpyDeletedIdxs.erase(cpyIdx);
                 
-                //std::cout << "____ " << lidx << "____" << i << " --- " << std::endl;
                 YType cpyYVal = _yValMMapWrapper->getVal(lidx);
                 
                 _yValMMapWrapper->persistVal(cpyIdx, cpyYVal);
@@ -559,10 +540,7 @@ private:
         //
         //
         
-        std::cout << "_****_ " << indexSize << "  ___  " << std::endl;
-        
         _mutex.unlock();
-        
     }
     
     IdxType eval(IdxType idx, std::list<FuncData>& functDataList, bool& hasInsValue, YType& yInsValue)
