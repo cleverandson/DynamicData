@@ -12,6 +12,8 @@
 #include "MMapWrapper.h"
 #include "DDConfig.h"
 #include "DDIndex.h"
+#include "DDLoopReduce.h"
+#include "DDSpawn.h"
 
 class Tests
 {
@@ -113,7 +115,7 @@ public:
         
         DDIndex<unsigned long, unsigned long> ddIndex(2, 0, 1, 2);
         
-        for (int i = 0; i<10000; i++)
+        for (int i = 0; i<20000; i++)
         {
             ddIndex.insertIdx(0, i);
         }
@@ -124,7 +126,7 @@ public:
         std::cout << "_s2_ " << std::endl;
         
         
-        for (int i = 0; i<9950; i++)
+        for (int i = 0; i<19950; i++)
         {
             ddIndex.deleteIdx(0);
         }
@@ -302,10 +304,52 @@ public:
         {
             std::cout << "FALSE " << std::endl;
         }
-        
     }
     
     
+    static void testDDLoopReduce()
+    {
+        //std::cout << "numb of threads " << std::thread::hardware_concurrency << std::endl;
+        
+        
+        DDLoopReduce<long> loopReduce(8);
+        
+        std::mutex mutex;
+        std::mutex* mutexRef = &mutex;
+        
+        loopReduce.reduce([mutexRef] (long inIdx) -> void
+        {
+            mutexRef->lock();
+            std::cout << "idx " << inIdx << std::endl;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            mutexRef->unlock();
+            
+        }, 1000, 10);
+    }
+    
+    static void testDDSpawn()
+    {
+        DDSpawn ddSpawn(8);
+    
+        std::mutex mutex;
+        //std::mutex* mutexRef = &mutex;
+        
+        for (int i=0; i<40; i++)
+        {
+            ddSpawn.runAsyncBlocking([&mutex]()
+            {
+                //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                
+                mutex.lock();
+                std::cout << "test " << std::endl;
+                mutex.unlock();
+            });
+            
+            ddSpawn.joinAllThreads();
+        }
+    
+        std::cout << "exit " << std::endl;
+    }
     
 };
 

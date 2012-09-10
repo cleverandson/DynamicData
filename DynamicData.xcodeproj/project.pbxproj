@@ -32,6 +32,8 @@
 		47564A7015E11B6E0035CFED /* MMapWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMapWrapper.h; sourceTree = "<group>"; };
 		47564A7215E242700035CFED /* Tests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tests.h; sourceTree = "<group>"; };
 		47762DD115DD342000223A73 /* DDMMapAllocator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DDMMapAllocator.h; sourceTree = "<group>"; };
+		478BF73115F91DB30098AA19 /* DDSpawn.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDSpawn.h; sourceTree = "<group>"; };
+		47CF2FE615F8D2EA009891ED /* DDLoopReduce.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDLoopReduce.h; sourceTree = "<group>"; };
 		47FA6FFB15DBBE1700E9715E /* DynamicData */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = DynamicData; sourceTree = BUILT_PRODUCTS_DIR; };
 		47FA6FFF15DBBE1700E9715E /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		47FA700115DBBE1700E9715E /* DynamicData.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = DynamicData.1; sourceTree = "<group>"; };
@@ -76,6 +78,8 @@
 				474E40AB15E25286005E4572 /* DDUtils.h */,
 				474E40BE15E3DD46005E4572 /* DDContinuousID.h */,
 				474E40BF15ED3375005E4572 /* DDIndex.h */,
+				47CF2FE615F8D2EA009891ED /* DDLoopReduce.h */,
+				478BF73115F91DB30098AA19 /* DDSpawn.h */,
 			);
 			path = DynamicData;
 			sourceTree = "<group>";

@@ -12,6 +12,8 @@
 #include "DDContinuousID.h"
 #include "Tests.h"
 #include "DDIndex.h"
+#include "DDLoopReduce.h"
+#include "DDSpawn.h"
 
 #include <sys/stat.h>
 
@@ -31,7 +33,10 @@ int main(int argc, const char * argv[])
     //Tests::testDDIndex3(false);
     //Tests::testDDIndex3(true);
     
-    Tests::testFileSizes();
+    //Tests::testFileSizes();
+    
+    Tests::testDDLoopReduce();
+    //Tests::testDDSpawn();
     
     return 0;
 }
