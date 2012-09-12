@@ -189,7 +189,7 @@ private:
     class FuncData
     {
     public:
-        std::function<IdxType (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal)> closure;
+        std::function<IdxType (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal, bool& hasUpdVal, YType& updVal)> closure;
     };
     
     class YValMapHeader { };
@@ -224,20 +224,32 @@ public:
         succeeded = false;
         YType yVal;
         
+        //TODO implement like std::unique_lock<std::mutex> lock(_mutex);
         _mutex.lock();
         
         bool hasInsValue=false;
         YType insYValue;
+        bool hasUpdValue=false;
+        YType updYValue;
         
         if (idx < _size)
         {
-            idx = eval(idx, _funcDataVec, hasInsValue, insYValue);
+            idx = eval(idx, _funcDataVec, hasInsValue, insYValue, false, hasUpdValue, updYValue);
             
             if (hasInsValue)
             {
                 yVal = insYValue;
             }
-            else yVal = _yValMMapWrapper->getVal(idx);
+            else if (hasUpdValue)
+            {
+                yVal = updYValue;
+            }
+            else
+            {
+                _yValMutex.lock();
+                yVal = _yValMMapWrapper->getVal(idx);
+                _yValMutex.unlock();
+            }
             
             succeeded = true;
         }
@@ -245,6 +257,40 @@ public:
         _mutex.unlock();
         
         return yVal;
+    }
+    
+    void updateIdx(IdxType idx, YType yValue, bool& succeeded)
+    {
+        /*
+        succeeded = false;
+        
+        _mutex.lock();
+        
+        bool hasInsValue=false;
+        YType insYValue;
+        bool shouldUpdate = true;
+        
+        if (idx < _size)
+        {
+            idx = eval(idx, _funcDataVec, hasInsValue, insYValue, shouldUpdate, yValue);
+            
+            if (hasInsValue)
+            {
+                //yVal = insYValue;
+            }
+            else
+            {
+                //probably wrong sync!!!
+                _yValMutex.lock();
+                _yValMMapWrapper->persistVal(idx, yValue);
+                _yValMutex.unlock();
+            }
+            
+            succeeded = true;
+        }
+        
+        _mutex.unlock();
+        */
     }
     
     void insertIdx(IdxType idx, YType yValue)
@@ -258,10 +304,11 @@ public:
             FuncData funcData;
             
             _size++;
-            funcData.closure = [idx, yValue] (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal) -> IdxType
+            funcData.closure = [idx, yValue] (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal, bool& hasUpdVal, YType& updVal) -> IdxType
             {
                 hasInsValue = false;
                 hasDelValue = false;
+                hasUpdVal = false;
                 
                 IdxType retIdx = inIdx;
                 
@@ -296,10 +343,10 @@ public:
            
             _size--;
             
-            funcData.closure = [idx] (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal) -> IdxType
+            funcData.closure = [idx] (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal, bool& hasUpdVal, YType& updVal) -> IdxType
             {
                 hasInsValue = false;
-                
+                hasUpdVal = false;
                 hasDelValue = true;
                 delVal = idx;
                 
@@ -337,6 +384,7 @@ private:
     
     //YVal Wrapper.
     std::unique_ptr<MMapWrapper<IdxType, YType, YValMapHeader>> _yValMMapWrapper;
+    std::mutex _yValMutex;
     
     IdxType _size;
     std::list<FuncData> _funcDataVec;
@@ -378,7 +426,6 @@ private:
         //TODO rename in deletedIdxs
         std::map<IdxType, bool> cpyDeletedIdxs;
         
-        
         _mutex.lock();
         
         //OPTIMIZATION?
@@ -386,7 +433,6 @@ private:
         indexSize = _size;
         
         _mutex.unlock();
-        
         
         IdxType idx;
         
@@ -400,6 +446,7 @@ private:
         IdxType dummyIdx=0;
         bool hasInsValue;
         YType yDummyVal;
+        bool notNeeded = false;
         
         bool hasDelValue;
         IdxType delVal;
@@ -407,15 +454,16 @@ private:
         size_t functDataSize = cpyFuncDataVec2.size();
         for (int i=0; i<functDataSize; i++)
         {
-            cpyFuncDataVec2.front().closure(dummyIdx, hasInsValue, yDummyVal, hasDelValue, delVal);
+            //TODO check if ins and upd vals can be treated similarly.
+            cpyFuncDataVec2.front().closure(dummyIdx, hasInsValue, yDummyVal, hasDelValue, delVal, notNeeded, yDummyVal);
             cpyFuncDataVec2.pop_front();
             
             if (hasDelValue)
             {
                 if (cpyFuncDataVec2.size() > 0)
                 {
-                    idx = eval(delVal, cpyFuncDataVec2, hasInsValue, yDummyVal);
-                
+                    idx = eval(delVal, cpyFuncDataVec2, hasInsValue, yDummyVal, true, notNeeded, yDummyVal);
+                    
                     if (!hasInsValue)
                     {
                         cpyDeletedIdxs[idx] = true;
@@ -430,20 +478,24 @@ private:
         //
         //
         
-        
-        
         hasInsValue=false;
         YType insYValue;
+        bool hasUpdVal;
+        YType yUpdValue;
         
         for (int i=0; i<indexSize; i++)
         {
-            idx = eval(i, cpyFuncDataVec, hasInsValue, insYValue);
-            
+            idx = eval(i, cpyFuncDataVec, hasInsValue, insYValue, true, hasUpdVal, yUpdValue);
+         
+            //!!! use update val if present
             if (hasInsValue)
             {
                 IdxType insIdx = _yValMMapWrapper->size();
                 
+                _yValMutex.lock();
                 _yValMMapWrapper->persistVal(insIdx, insYValue);
+                _yValMutex.unlock();
+                
                 _doubleSyncedMMapWrapper.persist(i, insIdx);
             }
             else _doubleSyncedMMapWrapper.persist(i, idx);
@@ -452,21 +504,15 @@ private:
         _doubleSyncedMMapWrapper.shrinkSize(indexSize);
         
         
-        
-        
-        
-        
         //
         //start defrag.
         //
-        
         assert(_yValMMapWrapper->size() - cpyDeletedIdxs.size() == indexSize);
         
         std::list<std::function<IdxType (IdxType inIdx)>> defragFuncts;
         
         
         IdxType defractSize = cpyDeletedIdxs.size();
-        
         
         IdxType lidx;
         for (IdxType i=0; i<defractSize; i++)
@@ -485,7 +531,9 @@ private:
                 
                 YType cpyYVal = _yValMMapWrapper->getVal(lidx);
                 
+                _yValMutex.lock();
                 _yValMMapWrapper->persistVal(cpyIdx, cpyYVal);
+                _yValMutex.unlock();
                 
                 defragFuncts.push_back([lidx, cpyIdx] (IdxType inIdx) -> IdxType
                    {
@@ -523,8 +571,6 @@ private:
         //
         
         
-        
-        
         _mutex.lock();
         
         auto begItr = _funcDataVec.begin();
@@ -536,23 +582,41 @@ private:
         //
         // defrag.
         //
+        _yValMutex.lock();
         _yValMMapWrapper->shrinkSize(indexSize);
+        _yValMutex.unlock();
         //
         //
         
         _mutex.unlock();
     }
     
-    IdxType eval(IdxType idx, std::list<FuncData>& functDataList, bool& hasInsValue, YType& yInsValue)
+    IdxType eval(IdxType idx, std::list<FuncData>& functDataList, bool& hasInsValue, YType& yInsValue, bool contEvalWhenUpdDetected, bool& hasUpdVal, YType& yUpdValue)
     {
+        hasUpdVal = false;
+        
         //not needed in this context.
-        bool hasDelValue;
+        bool evalHasDelValue;
+        bool evalHasUpdValue;
+        
         IdxType delVal;
+        IdxType updVal;
         
         for(auto& funcData : functDataList)
         {
-            idx = funcData.closure(idx, hasInsValue, yInsValue, hasDelValue, delVal);
-            if (hasInsValue) break;
+            idx = funcData.closure(idx, hasInsValue, yInsValue, evalHasDelValue, delVal, evalHasUpdValue, updVal);
+            
+            if (hasInsValue)
+            {
+                break;
+            }
+            else if (evalHasUpdValue)
+            {
+                hasUpdVal = true;
+                yUpdValue = updVal;
+                
+                if (!contEvalWhenUpdDetected) break;
+            }
         }
         
         if (!hasInsValue) idx = _doubleSyncedMMapWrapper.get(idx);
