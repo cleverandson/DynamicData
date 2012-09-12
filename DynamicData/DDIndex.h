@@ -614,12 +614,14 @@ private:
         IdxType delVal;
         IdxType updVal;
         
+        bool aborted = false;
         for(auto& funcData : functDataList)
         {
             idx = funcData.closure(idx, hasInsValue, yInsValue, evalHasDelValue, delVal, evalHasUpdValue, updVal);
             
             if (hasInsValue)
             {
+                aborted = true;
                 break;
             }
             else if (!hasUpdVal && evalHasUpdValue)
@@ -627,11 +629,15 @@ private:
                 hasUpdVal = true;
                 yUpdValue = updVal;
                 
-                if (!contEvalWhenUpdDetected) break;
+                if (!contEvalWhenUpdDetected)
+                {
+                    aborted = true;
+                    break;
+                }
             }
         }
         
-        if (!hasInsValue && contEvalWhenUpdDetected) idx = _doubleSyncedMMapWrapper.get(idx);
+        if (!aborted) idx = _doubleSyncedMMapWrapper.get(idx);
         
         return idx;
     }
