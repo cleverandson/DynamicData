@@ -14,6 +14,7 @@
 #include "DDIndex.h"
 #include "DDLoopReduce.h"
 #include "DDSpawn.h"
+#include "DDAccum.h"
 
 #include <sys/stat.h>
 
@@ -24,6 +25,9 @@ int main(int argc, const char * argv[])
     //Tests::testDDMMapAllocator();
     //Tests::testDDContinuousID();
     
+    //Tests::testDDIndex0(true);
+    
+    
     //Tests::testDDIndex(false);
     //Tests::testDDIndex(true);
     
@@ -33,9 +37,13 @@ int main(int argc, const char * argv[])
     //Tests::testDDIndex3(false);
     //Tests::testDDIndex3(true);
     
+    //TODO implement more test with updates!!
+    //Tests::testWithUpdateDDIndex(false);
+    
+    
     //Tests::testFileSizes();
     
-    Tests::testDDLoopReduce();
+    //Tests::testDDLoopReduce();
     //Tests::testDDSpawn();
     
     return 0;

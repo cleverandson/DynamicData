@@ -159,7 +159,6 @@ private:
     DDContinuousID<IdxType> _currCid;
     std::mutex _mutex;
     
-    
     void updateAccCount(IdxType key, IdxYVal idxYVal)
     {
         if (_accumStack.size() > 0)

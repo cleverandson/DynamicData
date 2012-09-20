@@ -105,15 +105,17 @@ public:
         writeMapSizeToFile();
     }
     
-    void shrinkSize(IdxType size)
+    //TODO new test this. replacement for shrinkSize.
+    void resize(IdxType size)
     {
-        if (size < _mapSize)
-        {
-            _mapSize = size;
-         
-            remapIfNeeded2();
-            writeMapSizeToFile();
-        }
+        unmap();
+        
+        _mapSize = size;
+        _fileSize = size + _paddingSize;
+        
+        ftruncate(_fileDesc, _fileSize * sizeof(Type) + _headerSize);
+        
+        map();
     }
     
     IdxType size()

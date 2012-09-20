@@ -115,7 +115,7 @@ public:
         
         DDIndex<unsigned long, unsigned long> ddIndex(2, 0, 1, 2);
         
-        for (int i = 0; i<20000; i++)
+        for (int i = 0; i<40000; i++)
         {
             ddIndex.insertIdx(0, i);
         }
@@ -126,7 +126,7 @@ public:
         std::cout << "_s2_ " << std::endl;
         
         
-        for (int i = 0; i<19950; i++)
+        for (int i = 0; i<39950; i++)
         {
             ddIndex.deleteIdx(0);
         }
@@ -162,6 +162,13 @@ public:
                 unsigned long ddVal = ddIndex.get(index, succeeded);
                 
                 //std::cout << "val__ " << ddVal << std::endl;
+                /*
+                if (*iter != ddVal)
+                {
+                    std::cout << "val__ " << ddVal << "  --  " << *iter << std::endl;
+                    break;
+                }
+                */
                 assert(*iter == ddVal);
                 
                 index++;
@@ -200,11 +207,11 @@ public:
         std::advance(itr,6);
         refList.erase(itr);
         
-        std::cout << "_11____" << std::endl;
+        //std::cout << "_11____" << std::endl;
         
         //if (!hasPersistData) ddIndex.mapFunctsDBug();
         
-        std::cout << "_22____" << std::endl;
+        //std::cout << "_22____" << std::endl;
         
         
         if (!hasPersistData) ddIndex.deleteIdx(6);
@@ -219,6 +226,9 @@ public:
         for(auto iter = refList.begin(); iter != refList.end(); iter++)
         {
             unsigned long ddVal = ddIndex.get(index, succeeded);
+            
+            //std::cout << "  ___ "  << ddVal << "  __11___ " << *iter << std::endl;
+            
             assert(*iter == ddVal);
             
             index++;
@@ -226,7 +236,7 @@ public:
         
         std::cout << "____done____" << std::endl;
     }
-    
+
     static void testDDIndex(bool hasPersistData)
     {
         if (!hasPersistData) system("rm -r data");
@@ -274,6 +284,52 @@ public:
         
         std::cout << "____done____" << std::endl;
     }
+    
+    static void testWithUpdateDDIndex(bool hasPersistData)
+    {
+        if (!hasPersistData) system("rm -r data");
+        
+        DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
+        bool succeeded;
+        
+        //std::list<unsigned long> refList;
+        
+        if (!hasPersistData)  ddIndex.insertIdx(0,10);
+        if (!hasPersistData)  ddIndex.insertIdx(0,10);
+        
+        std::cout << "_sleep_start_" << std::endl;
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+        std::cout << "_sleep_end_" << std::endl;
+        
+        if (!hasPersistData)  ddIndex.insertIdx(0,10);
+        
+        if (!hasPersistData)  ddIndex.insertIdx(0,101);
+        
+        if (!hasPersistData)  ddIndex.updateIdx(0, 102);
+        
+        
+        if (!hasPersistData)  ddIndex.updateIdx(1, 9999);
+        
+        if (!hasPersistData)  ddIndex.insertIdx(3,101111);
+        
+        //if (!hasPersistData)  ddIndex.deleteIdx(3);
+        
+        //refList.push_back(102);
+        
+        
+        
+        
+        for (int i=0; i<ddIndex.size(); i++)
+        {
+            std::cout << "_tt_" << ddIndex.get(i, succeeded) << std::endl;
+            
+        }
+        
+        
+        
+    }
+    
+    
     
     static void testDDMMapAllocator()
     {

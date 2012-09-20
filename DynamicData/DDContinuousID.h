@@ -40,11 +40,42 @@ public:
     {
         _value++;
     }
+          
+    //test this.
+    IdType diff(const DDContinuousID& b)
+    {
+        IdType diff;
+        
+        if (b._value > _value && this > b)
+        {
+            diff = b._value - _value;
+        }
+        else if (b._value > _value && this < b)
+        {
+            diff = maxId() - b._value + _value;
+        }
+        else if (b._value < _value && this > b)
+        {
+            diff = _value - b._value;
+        }
+        else if (b._value < _value && this < b)
+        {
+            diff = maxId() - _value + b._value;
+        }
+        
+        return diff;
+    }
                 
     static IdType bound()
     {
         static IdType bound = (IdType)-1 / 2;
         return bound;
+    }
+             
+    //test this.
+    static IdType maxId()
+    {
+        return (IdType)-1;
     }
                 
     IdType value()
