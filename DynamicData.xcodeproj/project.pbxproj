@@ -25,10 +25,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		4736657315FF731A006ACB1D /* DDAccum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDAccum.h; sourceTree = "<group>"; };
-		474E40A915E24B8C005E4572 /* DDConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDConfig.h; sourceTree = "<group>"; };
 		474E40AB15E25286005E4572 /* DDUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDUtils.h; sourceTree = "<group>"; };
-		474E40BE15E3DD46005E4572 /* DDContinuousID.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDContinuousID.h; sourceTree = "<group>"; };
 		474E40BF15ED3375005E4572 /* DDIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDIndex.h; sourceTree = "<group>"; };
 		47564A7015E11B6E0035CFED /* MMapWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMapWrapper.h; sourceTree = "<group>"; };
 		47564A7215E242700035CFED /* Tests.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Tests.h; sourceTree = "<group>"; };
@@ -75,13 +72,10 @@
 				47762DD115DD342000223A73 /* DDMMapAllocator.h */,
 				47564A7015E11B6E0035CFED /* MMapWrapper.h */,
 				47564A7215E242700035CFED /* Tests.h */,
-				474E40A915E24B8C005E4572 /* DDConfig.h */,
 				474E40AB15E25286005E4572 /* DDUtils.h */,
-				474E40BE15E3DD46005E4572 /* DDContinuousID.h */,
 				474E40BF15ED3375005E4572 /* DDIndex.h */,
 				47CF2FE615F8D2EA009891ED /* DDLoopReduce.h */,
 				478BF73115F91DB30098AA19 /* DDSpawn.h */,
-				4736657315FF731A006ACB1D /* DDAccum.h */,
 			);
 			path = DynamicData;
 			sourceTree = "<group>";

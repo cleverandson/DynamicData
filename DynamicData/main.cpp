@@ -9,12 +9,10 @@
 #include <iostream>
 #include "DDMMapAllocator.h"
 #include "MMapWrapper.h"
-#include "DDContinuousID.h"
 #include "Tests.h"
 #include "DDIndex.h"
 #include "DDLoopReduce.h"
 #include "DDSpawn.h"
-#include "DDAccum.h"
 
 #include <sys/stat.h>
 

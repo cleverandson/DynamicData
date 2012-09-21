@@ -16,7 +16,6 @@
 #include <vector>
 
 #include "DDMMapAllocator.h"
-#include "DDContinuousID.h"
 
 template<typename IdxType, typename YType>
 class DDIndex

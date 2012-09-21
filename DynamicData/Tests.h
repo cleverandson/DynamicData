@@ -10,10 +10,10 @@
 #define DynamicData_Tests_h
 
 #include "MMapWrapper.h"
-#include "DDConfig.h"
 #include "DDIndex.h"
 #include "DDLoopReduce.h"
 #include "DDSpawn.h"
+#include "MMapWrapper.h"
 
 class Tests
 {
@@ -62,7 +62,7 @@ public:
     {
         std::cout << "start " << std::endl;
         
-        MMapWrapper<ULongLong, ULongLong, UserDataHeader> wmap("testPath", 30);
+        MMapWrapper<unsigned long long, unsigned long long, UserDataHeader> wmap("testPath", 30);
         
         std::cout << "size__ " << wmap.size() << std::endl;
         std::cout << "filesize_s_ " << wmap.fileSize() << std::endl;
@@ -80,7 +80,7 @@ public:
         
         for (int i=0; i<9999; i++)
         {
-            wmap.deleteIdx(0, [](ULongLong oldIdx, ULongLong remapIdx) {});
+            wmap.deleteIdx(0, [](unsigned long long oldIdx, unsigned long long remapIdx) {});
         }
         
         for (int i=0; i<10000; i++)
@@ -333,14 +333,15 @@ public:
     
     static void testDDMMapAllocator()
     {
-        DDMMapAllocator<ULongLong>* mapAlloc = DDMMapAllocator<ULongLong>::SHARED();
+        DDMMapAllocator<unsigned long long>* mapAlloc = DDMMapAllocator<unsigned long long>::SHARED();
         
-        auto handle = mapAlloc->getHandleFromDataStore<ULongLong, UserDataHeader>(1, 0);
+        auto handle = mapAlloc->getHandleFromDataStore<unsigned long long, UserDataHeader>(1, 0);
         //handle->presistVal(0, 12345);
     
         std::cout << "__ddd " << handle->getVal(0) << std::endl;
     }
     
+    /*
     static void testDDContinuousID()
     {
         DDContinuousID<unsigned int> dd(1);
@@ -361,7 +362,7 @@ public:
             std::cout << "FALSE " << std::endl;
         }
     }
-    
+    */
     
     static void testDDLoopReduce()
     {
