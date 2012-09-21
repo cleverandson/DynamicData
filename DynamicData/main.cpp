@@ -13,11 +13,14 @@
 #include "DDIndex.h"
 #include "DDLoopReduce.h"
 #include "DDSpawn.h"
+#include "Demo.h"
 
 #include <sys/stat.h>
 
 int main(int argc, const char * argv[])
 {
+    Demo::demo();
+    
     //Tests::mmapSpeedTest();
     //Tests::testMMapWrapper();
     //Tests::testDDMMapAllocator();
