@@ -14,6 +14,7 @@
 #include "DDLoopReduce.h"
 #include "DDSpawn.h"
 #include "MMapWrapper.h"
+#include "DDMonotonic.h"
 
 class Tests
 {
@@ -406,6 +407,63 @@ public:
         }
     
         std::cout << "exit " << std::endl;
+    }
+    
+    class TestCacheObj
+    {
+    public:
+        
+        TestCacheObj() :
+            i(0),
+            k(0)
+        {}
+        
+        TestCacheObj(int t) :
+            i(t)
+        {}
+        
+        /*
+        TestCacheObj(const TestCacheObj&)
+        {
+            
+        }
+        */
+        
+        int i;
+        int k;
+    };
+    
+    
+    static void testDDMonotonic()
+    {
+        DDMonotonic<unsigned int, TestCacheObj> m(1);
+        
+        
+        m.addIdx(3, TestCacheObj(1));
+        
+        m.addIdx(5, TestCacheObj(2));
+        m.addIdx(5, TestCacheObj(3));
+        m.addIdx(5, TestCacheObj(4));
+        
+        m.addIdx(7, TestCacheObj(5));
+        
+        
+        
+        //bool& hasCacheElement, CachedElement& cachedElement
+        
+        bool hasCacheElement;
+        TestCacheObj testCacheObj;
+        
+        for (int i=0; i<8; i++)
+        {
+            std::cout << "_idx_ " << i << "__ " << m.eval(i, hasCacheElement, testCacheObj) << std::endl;
+        
+            if (hasCacheElement)
+            {
+                std::cout << "_cached_ " << testCacheObj.i << std::endl;
+            }
+        }
+        
     }
     
 };

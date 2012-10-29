@@ -14,12 +14,13 @@
 #include "DDLoopReduce.h"
 #include "DDSpawn.h"
 #include "Demo.h"
+#include "DDMonotonic.h"
 
 #include <sys/stat.h>
 
 int main(int argc, const char * argv[])
 {
-    Demo::demo();
+    //Demo::demo();
     
     //Tests::mmapSpeedTest();
     //Tests::testMMapWrapper();
@@ -46,6 +47,10 @@ int main(int argc, const char * argv[])
     
     //Tests::testDDLoopReduce();
     //Tests::testDDSpawn();
+    
+    
+    
+    Tests::testDDMonotonic();
     
     return 0;
 }
