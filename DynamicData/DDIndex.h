@@ -483,6 +483,7 @@ private:
         std::vector<YType> updVals;
         std::vector<std::pair<IdxType, YType>> insVals;
         
+        //TODO test.
         IdxType range = 200;
         std::vector<IdxType> remapIdxs;
         
@@ -621,7 +622,6 @@ private:
                 isFirstClosure = false;
             }
             
-            
             //map cached values.
             for (IdxType k=0; k<range; k++)
             {
@@ -661,10 +661,13 @@ private:
         };
         
         
+        std::cout << "__1" << std::endl;
         //
         //reduce to double map
         //
         rangeLoop(range, indexSize, reduceMapOntoDoubleSyncedMMapWrapper);
+        
+        std::cout << "__2" << std::endl;
         
         //
         //reduce deleted idxs and push them in deltedIdxs
@@ -674,6 +677,8 @@ private:
         {
             reduceDeletedIdxs(*itr);
         }
+        
+        std::cout << "__3" << std::endl;
         
         auto processDeletedIdxs = [&deletedIdxs, indexSize] (IdxType range, std::function<void (IdxType idx, bool hasDelIdx, IdxType delIdx)> closure)
         {
@@ -736,16 +741,21 @@ private:
             _yValMutex.unlock();
         };
         
+        std::cout << "__4" << std::endl;
+        
         //
         //move the remap idxs.
         //
         processDeletedIdxs(remapIdxs.size(), moveRemapIdxs);
         
+        std::cout << "__5" << std::endl;
         
         //
         //insert the YValues
         //
         processDeletedIdxs(insVals.size(), insertInsVals);
+        
+        std::cout << "__6" << std::endl;
         
         _mutex.lock();
         

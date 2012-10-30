@@ -25,7 +25,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		47363ECC163965A700AE3241 /* DDMonotonic.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDMonotonic.h; sourceTree = "<group>"; };
+		47363F0C163F090900AE3241 /* DDActivePassivePtr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDActivePassivePtr.h; sourceTree = "<group>"; };
+		47363F0E163F130000AE3241 /* DDOperationAccum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDOperationAccum.h; sourceTree = "<group>"; };
+		47363F101640301F00AE3241 /* DDInsertField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDInsertField.h; sourceTree = "<group>"; };
+		47363F11164043DC00AE3241 /* DDDeleteField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDDeleteField.h; sourceTree = "<group>"; };
 		4742E918160CBFEC0045F769 /* Demo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Demo.h; sourceTree = "<group>"; };
 		474E40AB15E25286005E4572 /* DDUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDUtils.h; sourceTree = "<group>"; };
 		474E40BF15ED3375005E4572 /* DDIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDIndex.h; sourceTree = "<group>"; };
@@ -79,7 +82,10 @@
 				47CF2FE615F8D2EA009891ED /* DDLoopReduce.h */,
 				478BF73115F91DB30098AA19 /* DDSpawn.h */,
 				4742E918160CBFEC0045F769 /* Demo.h */,
-				47363ECC163965A700AE3241 /* DDMonotonic.h */,
+				47363F0C163F090900AE3241 /* DDActivePassivePtr.h */,
+				47363F0E163F130000AE3241 /* DDOperationAccum.h */,
+				47363F101640301F00AE3241 /* DDInsertField.h */,
+				47363F11164043DC00AE3241 /* DDDeleteField.h */,
 			);
 			path = DynamicData;
 			sourceTree = "<group>";

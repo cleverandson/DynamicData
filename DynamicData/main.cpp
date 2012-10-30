@@ -14,7 +14,6 @@
 #include "DDLoopReduce.h"
 #include "DDSpawn.h"
 #include "Demo.h"
-#include "DDMonotonic.h"
 
 #include <sys/stat.h>
 
@@ -50,7 +49,8 @@ int main(int argc, const char * argv[])
     
     
     
-    Tests::testDDMonotonic();
+    //Tests::testDDDeleteField();
+    Tests::testDDInsertField();
     
     return 0;
 }

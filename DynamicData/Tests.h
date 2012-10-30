@@ -14,7 +14,10 @@
 #include "DDLoopReduce.h"
 #include "DDSpawn.h"
 #include "MMapWrapper.h"
-#include "DDMonotonic.h"
+#include "DDActivePassivePtr.h"
+#include "DDOperationAccum.h"
+#include "DDInsertField.h"
+#include "DDDeleteField.h"
 
 class Tests
 {
@@ -422,50 +425,82 @@ public:
             i(t)
         {}
         
-        /*
-        TestCacheObj(const TestCacheObj&)
-        {
-            
-        }
-        */
-        
         int i;
         int k;
     };
     
     
-    static void testDDMonotonic()
+    static void testDDDeleteField()
     {
-        DDMonotonic<unsigned int, TestCacheObj> m(1);
+        DDDeleteField<unsigned int> m;
         
         
-        m.addIdx(3, TestCacheObj(1));
+        m.addIdx(7);
+        
+        m.addIdx(5);
+        
+        m.addIdx(3);
+        
+        for (int i=0; i<8; i++)
+        {
+            std::cout << "_idx_ " << i << "__ " << m.eval(i) << std::endl;
+        }
+        
+    }
+
+    static void testDDInsertField()
+    {
+        DDInsertField<unsigned int, TestCacheObj> m;
+        
+        m.addIdx(7, TestCacheObj(3));
         
         m.addIdx(5, TestCacheObj(2));
-        m.addIdx(5, TestCacheObj(3));
-        m.addIdx(5, TestCacheObj(4));
         
-        m.addIdx(7, TestCacheObj(5));
+        m.addIdx(3, TestCacheObj(1));
+    
+        //eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
         
+        m.debugPrint();
         
+        /*
+        TestCacheObj testCacheObj;
+        bool hasCacheElement;
         
-        //bool& hasCacheElement, CachedElement& cachedElement
+        for (int i=0; i<9; i++)
+        {
+            auto idx = m.eval(i, hasCacheElement, testCacheObj);
+            
+            std::cout << "_idx_ " << i << " __ " << idx << " __ " << hasCacheElement << std::endl;
+        }
+        */
+    }
+    
+    /*
+    static void testDDOperationAccum()
+    {
+        typedef DDOperationAccum<unsigned int, TestCacheObj> DDOperationAccumType;
+        typedef DDActivePassivePtr<DDOperationAccumType> DDActivePassivePtrType;
+        
+        DDActivePassivePtrType apPtr(std::make_shared<DDOperationAccumType>(), std::make_shared<DDOperationAccumType>());
+        
+        apPtr->insertIdx(0, TestCacheObj(4));
+        apPtr->insertIdx(0, TestCacheObj(3));
+        apPtr->insertIdx(0, TestCacheObj(2));
+        apPtr->insertIdx(0, TestCacheObj(1));
         
         bool hasCacheElement;
         TestCacheObj testCacheObj;
         
+        
         for (int i=0; i<8; i++)
         {
-            std::cout << "_idx_ " << i << "__ " << m.eval(i, hasCacheElement, testCacheObj) << std::endl;
-        
-            if (hasCacheElement)
-            {
-                std::cout << "_cached_ " << testCacheObj.i << std::endl;
-            }
+            apPtr->eval(i, hasCacheElement, testCacheObj);
+            
+            //std::cout << "__ " << testCacheObj.i << std::endl;
         }
         
     }
-    
+    */
 };
 
 #endif
