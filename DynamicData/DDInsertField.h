@@ -30,6 +30,12 @@ private:
             cachedElements(1, cachedElement)
         {}
 
+        Element(IdxType idxIN, IdxType diffIN, const CachedElement& cachedElement) :
+        idx(idxIN),
+        diff(diffIN),
+        cachedElements(1, cachedElement)
+        {}
+        
         IdxType idx;
         IdxType diff;
         std::vector<CachedElement> cachedElements;
@@ -54,7 +60,7 @@ public:
     
     void addIdx(IdxType idx, const CachedElement& cachedElement)
     {
-        auto biggerThanItr = std::equal_range(_vec.begin(), _vec.end(), Element(idx), Comperator()).second;
+        auto biggerThanItr = std::upper_bound(_vec.begin(), _vec.end(), Element(idx), Comperator());
     
         if (biggerThanItr == _vec.begin())
         {
@@ -68,7 +74,7 @@ public:
         
             if (smallerOrEqual->idx != idx)
             {
-                biggerThanItr = _vec.insert(biggerThanItr, Element(idx, cachedElement));
+                biggerThanItr = _vec.insert(biggerThanItr, Element(idx, smallerOrEqual->diff + 1, cachedElement));
                 biggerThanItr++;
             }
             else
@@ -97,7 +103,8 @@ public:
             
             if (idxDiff < numbOfElements)
             {
-                cachedElement = biggerThanItr->cachedElements[numbOfElements - idxDiff - 1];
+                //cachedElement = biggerThanItr->cachedElements[numbOfElements - idxDiff - 1];
+                cachedElement = biggerThanItr->cachedElements[idxDiff];
                 hasCacheElement = true;
             }
         }
@@ -117,7 +124,7 @@ public:
     {
         for (typename std::vector<Element>::iterator itr = _vec.begin(); itr != _vec.end(); itr++)
         {
-            std::cout << "__ " << itr->diff << std::endl;
+            std::cout << "_i_ " << itr->idx << "_d_ " << itr->diff << std::endl;
         }
     }
 
@@ -129,6 +136,7 @@ private:
         while (itr != _vec.end())
         {
             itr->idx++;
+            itr->diff++;
             itr++;
         }
     }

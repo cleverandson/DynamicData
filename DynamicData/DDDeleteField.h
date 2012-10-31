@@ -62,7 +62,25 @@ public:
             ret.first->diff += lastElItr->diff;
         }
         
+        //
+        // check corner case: if the deletion point is above another deletion point.
+        //
+        auto tempItr = ret.first;
+        
         ret.first++;
+        
+        if (ret.first != _set.end())
+        {
+            if (tempItr->idx == ret.first->idx - 1)
+            {
+                tempItr->diff += ret.first->diff;
+                _set.erase(ret.first);
+                tempItr++;
+                ret.first = tempItr;
+            }
+        }
+        //
+        //
         
         adjustDiffs(ret.first);
     }

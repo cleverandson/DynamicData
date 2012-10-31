@@ -50,7 +50,8 @@ int main(int argc, const char * argv[])
     
     
     //Tests::testDDDeleteField();
-    Tests::testDDInsertField();
+    //Tests::testDDInsertField();
+    Tests::testDDField();
     
     return 0;
 }

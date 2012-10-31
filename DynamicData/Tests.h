@@ -15,9 +15,9 @@
 #include "DDSpawn.h"
 #include "MMapWrapper.h"
 #include "DDActivePassivePtr.h"
-#include "DDOperationAccum.h"
 #include "DDInsertField.h"
 #include "DDDeleteField.h"
+#include "DDField.h"
 
 class Tests
 {
@@ -452,55 +452,81 @@ public:
     {
         DDInsertField<unsigned int, TestCacheObj> m;
         
-        m.addIdx(7, TestCacheObj(3));
+        m.addIdx(5, TestCacheObj(50));
+        //m.addIdx(5, TestCacheObj(51));
         
-        m.addIdx(5, TestCacheObj(2));
+        m.addIdx(3, TestCacheObj(30));
         
-        m.addIdx(3, TestCacheObj(1));
-    
-        //eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
+        m.addIdx(7, TestCacheObj(70));
         
-        m.debugPrint();
         
-        /*
+        //m.debugPrint();
+        
+        
         TestCacheObj testCacheObj;
         bool hasCacheElement;
         
-        for (int i=0; i<9; i++)
+        for (int i=0; i<10; i++)
         {
             auto idx = m.eval(i, hasCacheElement, testCacheObj);
             
-            std::cout << "_idx_ " << i << " __ " << idx << " __ " << hasCacheElement << std::endl;
+            std::cout << "_idx_ " << i << " __ " << idx << " __ " << hasCacheElement << " _elid_ " << testCacheObj.i << std::endl;
         }
-        */
+        
     }
     
-    /*
-    static void testDDOperationAccum()
+    static void testDDField()
     {
-        typedef DDOperationAccum<unsigned int, TestCacheObj> DDOperationAccumType;
-        typedef DDActivePassivePtr<DDOperationAccumType> DDActivePassivePtrType;
+        DDField<unsigned int, TestCacheObj> field;
         
-        DDActivePassivePtrType apPtr(std::make_shared<DDOperationAccumType>(), std::make_shared<DDOperationAccumType>());
         
-        apPtr->insertIdx(0, TestCacheObj(4));
-        apPtr->insertIdx(0, TestCacheObj(3));
-        apPtr->insertIdx(0, TestCacheObj(2));
-        apPtr->insertIdx(0, TestCacheObj(1));
+        field.insertIdx(1, TestCacheObj(0));
+        field.insertIdx(1, TestCacheObj(1));
+        field.insertIdx(1, TestCacheObj(2));
         
-        bool hasCacheElement;
+        
+        /*
+        field.insertIdx(0, TestCacheObj(2));
+        field.insertIdx(0, TestCacheObj(3));
+        */
+        
+        //field.deleteIdx(0);
+        //field.deleteIdx(1);
+        
+        //field.deleteIdx(1);
+        
+        
+        /*
+         __oo
+         _idx_  1 __ 2
+         _idx_  2 __ 1
+         _idx_  3 __ 0
+        */
+        
+        
         TestCacheObj testCacheObj;
+        bool hasCacheElement;
         
-        
-        for (int i=0; i<8; i++)
+        for (int i=0; i<10; i++)
         {
-            apPtr->eval(i, hasCacheElement, testCacheObj);
+            testCacheObj.i = -1;
+            auto idx = field.eval(i, hasCacheElement, testCacheObj);
             
-            //std::cout << "__ " << testCacheObj.i << std::endl;
+            //std::cout << "__GG " << idx << std::endl;
+            
+            
+            if (!hasCacheElement)
+            {
+                std::cout << "__oo " << std::endl;
+            }
+            else
+            {
+                std::cout << "_idx_  " << i << " __ " << testCacheObj.i << std::endl;
+            }
+            
         }
-        
     }
-    */
+    
 };
 
 #endif
