@@ -16,6 +16,8 @@
 #include <vector>
 
 #include "DDMMapAllocator.h"
+#include "DDActivePassivePtr.h"
+#include "DDField.h"
 
 template<typename IdxType, typename YType>
 class DDIndex
@@ -202,6 +204,7 @@ private:
         unsigned int _activeMapIdx;
     };
     
+    //TODO should be removed?
     class FuncData
     {
     public:
@@ -210,36 +213,6 @@ private:
     
     class YValMapHeader { };
     
-   
-    class ReduceYValue
-    {
-    public:
-        
-        ReduceYValue() :
-            idx(0),
-            terminated(false),
-            hasUpdVal(false),
-            hasInsVal(false)
-        {
-            
-        }
-        
-        void reset()
-        {
-            idx = 0;
-            terminated = false;
-            hasUpdVal = false;
-            hasInsVal = false;
-        }
-        
-        IdxType idx;
-        bool terminated;
-        bool hasUpdVal;
-        IdxType updIdx;
-        bool hasInsVal;
-        IdxType insIdx;
-    };
-    
 public:
     
     DDIndex(size_t scopeVal, size_t idVal1, size_t idVal2, size_t idVal3) :
@@ -247,10 +220,10 @@ public:
         _yValMMapWrapper(DDMMapAllocator<IdxType>::SHARED()->template getHandleFromDataStore<YType, YValMapHeader>(scopeVal, idVal3)),
         _size(_doubleSyncedMMapWrapper.size()),
         _shoutdownCount(0),
-        _reduceAndSwapThread(&DDIndex::reduceAndSwapMap,this)
-    {
+        _reduceAndSwapThread(&DDIndex::reduceAndSwapMap,this),
     
-    }
+        _activPassivField(DDField<IdxType, YType>(), DDField<IdxType, YType>())
+    {}
     
     ~DDIndex()
     {
@@ -270,40 +243,33 @@ public:
         succeeded = false;
         YType yVal;
         
-        _mutex.lock();
-        
-        bool hasInsValue=false;
-        YType insYValue;
-        bool hasUpdValue=false;
-        YType updYValue;
-        
         if (idx < _size)
         {
-            idx = eval(idx, _funcDataVec, hasInsValue, insYValue, false, hasUpdValue, updYValue);
+            _mutex.lock();
             
-            if (hasInsValue)
+            bool hasCacheElement;
+            idx = _activPassivField->eval(idx, hasCacheElement, yVal);
+            
+            if (!hasCacheElement)
             {
-                yVal = insYValue;
+                idx = _activPassivField.back().eval(idx, hasCacheElement, yVal);
+                
+                if (!hasCacheElement)
+                {
+                    idx = _doubleSyncedMMapWrapper.get(idx);
+                    yVal = _yValMMapWrapper->getVal(idx);
+                }
             }
-            else if (hasUpdValue)
-            {
-                yVal = updYValue;
-            }
-            else
-            {
-                _yValMutex.lock();
-                yVal = _yValMMapWrapper->getVal(idx);
-                _yValMutex.unlock();
-            }
+
+            _mutex.unlock();
             
             succeeded = true;
         }
         
-        _mutex.unlock();
-        
         return yVal;
     }
     
+    /*
     void updateIdx(IdxType idx, YType yValue)
     {
         if (!_shoutdownCount)
@@ -334,6 +300,7 @@ public:
             _mutex.unlock();
         }
     }
+    */
     
     void insertIdx(IdxType idx, YType yValue)
     {
@@ -343,31 +310,9 @@ public:
             
             _mutex.lock();
             
-            FuncData funcData;
+            _activPassivField->insertIdx(idx, yValue);
             
             _size++;
-            funcData.closure = [idx, yValue] (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal, bool& hasUpdVal, YType& updVal) -> IdxType
-            {
-                hasInsValue = false;
-                hasDelValue = false;
-                hasUpdVal = false;
-                
-                IdxType retIdx = inIdx;
-                
-                if (inIdx == idx)
-                {
-                    insVal = yValue;
-                    hasInsValue = true;
-                }
-                else if (inIdx > idx)
-                {
-                    retIdx = inIdx -1;
-                }
-                
-                return retIdx;
-            };
-            
-            _funcDataVec.push_front(funcData);
             
             _mutex.unlock();
         }
@@ -380,30 +325,10 @@ public:
             assert(idx < _size);
             
             _mutex.lock();
+         
+            _activPassivField->deleteIdx(idx);
             
-            FuncData funcData;
-           
             _size--;
-            
-            funcData.closure = [idx] (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal, bool& hasUpdVal, YType& updVal) -> IdxType
-            {
-                hasInsValue = false;
-                hasUpdVal = false;
-                hasDelValue = true;
-                delVal = idx;
-                
-                
-                IdxType retIdx = inIdx;
-                
-                if (inIdx >= idx)
-                {
-                    retIdx = inIdx + 1;
-                }
-                
-                return retIdx;
-            };
-            
-            _funcDataVec.push_front(funcData);
             
             _mutex.unlock();
         }
@@ -426,25 +351,31 @@ private:
     
     //YVal Wrapper.
     std::unique_ptr<MMapWrapper<IdxType, YType, YValMapHeader>> _yValMMapWrapper;
-    std::mutex _yValMutex;
     
     IdxType _size;
-    std::list<FuncData> _funcDataVec;
+    
     std::mutex _mutex;
     std::atomic<int> _shoutdownCount;
     
     std::thread _reduceAndSwapThread;
     
+    DDActivePassivePtr<DDField<IdxType, YType>> _activPassivField;
+    
     void reduceAndSwapMap()
     {
+        //return;
+        
         while(true)
         {
-            size_t numberOfFuncts;
+            size_t fieldSize;
+            
             _mutex.lock();
-            numberOfFuncts = _funcDataVec.size();
+            
+            fieldSize = _activPassivField->size();
+            
             _mutex.unlock();
             
-            if (numberOfFuncts > 0)
+            if (fieldSize > 0)
             {
                 mapFuncts();
             }
@@ -462,131 +393,21 @@ private:
     
     void mapFuncts()
     {
-        //TODO rename in cpyFuncDataList.
-        std::list<FuncData> cpyFuncDataVec;
-        size_t cpyFuncDataVecSize;
         IdxType indexSize;
         
         
         _mutex.lock();
         
-        //TODO limit number of proccessed closures.
-        //OPTIMIZATION?
-        cpyFuncDataVec = _funcDataVec;
-        cpyFuncDataVecSize = cpyFuncDataVec.size();
+        _activPassivField.swap();
+        DDField<IdxType, YType>& backField = _activPassivField.back();
         
         indexSize = _size;
         
         _mutex.unlock();
         
-        std::vector<ReduceYValue> deletedIdxs;
-        std::vector<YType> updVals;
-        std::vector<std::pair<IdxType, YType>> insVals;
         
         //TODO test.
         IdxType range = 200;
-        std::vector<IdxType> remapIdxs;
-        
-        
-        auto reduceMapClosure = [] (IdxType startIdx, IdxType range, bool first, FuncData& funcData, std::vector<ReduceYValue>& tempMap, std::vector<YType>& updVals, std::vector<std::pair<IdxType, YType>>& insVals)
-        {
-            ReduceYValue ry;
-            
-            IdxType idx;
-            for (IdxType k=0; k<range; k++)
-            {
-                idx = k + startIdx;
-                
-                if (first)
-                {
-                    ry.reset();
-                    ry.idx = idx;
-                }
-                else
-                {
-                    ry = tempMap[k];
-                }
-                
-                if (!ry.terminated)
-                {
-                    bool hasInsValue2;
-                    YType insVal2;
-                    bool hasUpdValue2;
-                    YType updVal2;
-                    bool hasDelValue2;
-                    IdxType delVal2;
-                    
-                    ry.idx = funcData.closure(ry.idx, hasInsValue2, insVal2, hasDelValue2, delVal2, hasUpdValue2, updVal2);
-                    
-                    if (hasUpdValue2)
-                    {
-                        ry.hasUpdVal = true;
-                        ry.updIdx = updVals.size();
-                        updVals.push_back(updVal2);
-                    }
-                    else if (hasInsValue2)
-                    {
-                        YType& yVal = insVal2;
-                        
-                        if (ry.hasUpdVal)
-                        {
-                            yVal = updVals[ry.updIdx];
-                            ry.hasUpdVal = false;
-                        }
-                        
-                        ry.hasInsVal = true;
-                        ry.insIdx = insVals.size();
-                        ry.terminated = true;
-                        
-                        insVals.push_back(std::make_pair(0, yVal));
-                    }
-                    
-                    tempMap[k] = ry;
-                }
-            }
-        };
-        
-        auto reduceDeletedIdxs = [&deletedIdxs] (FuncData& funcData)
-        {
-            bool hasInsValue2;
-            YType insVal2;
-            bool hasUpdValue2;
-            YType updVal2;
-            bool hasDelValue2;
-            IdxType delVal2;
-            
-            //
-            // reduced deleted idxs.
-            for (IdxType j=0; j<deletedIdxs.size(); j++)
-            {
-                ReduceYValue& ry = deletedIdxs[j];
-                
-                if (!ry.terminated)
-                {
-                    ry.idx = funcData.closure(ry.idx, hasInsValue2, insVal2, hasDelValue2, delVal2, hasUpdValue2, updVal2);
-                    
-                    //TODO check!
-                    if (hasInsValue2)
-                    {
-                        ry.terminated = true;
-                    }
-                }
-            }
-            
-            //check if del idx exists.
-            IdxType idx=0;
-            funcData.closure(idx, hasInsValue2, insVal2, hasDelValue2, delVal2, hasUpdValue2, updVal2);
-            
-            if (hasDelValue2)
-            {
-                ReduceYValue delY;
-                delY.idx = delVal2;
-                deletedIdxs.push_back(delY);
-            }
-            //
-            //
-        };
-        
         
         auto rangeLoop = [] (IdxType range, IdxType size, std::function<void (IdxType idx, IdxType range)> closure)
         {
@@ -609,210 +430,93 @@ private:
             }
         };
         
-        auto reduceMapOntoDoubleSyncedMMapWrapper = [this, &cpyFuncDataVec, &insVals, &updVals, &remapIdxs, indexSize, &reduceMapClosure] (IdxType idxIN, IdxType range)
+    
+        //xxx
+        backField.startItr();
+        std::vector<IdxType> deletedIdxs2;
+        size_t insCount = 0;
+        
+        auto reduceMapOntoDoubleSyncedMMapWrapper = [this, &backField, &deletedIdxs2, &insCount] (IdxType idxIN, IdxType range)
         {
-            std::vector<ReduceYValue> tempMap(range);
+            bool hasCacheElement;
+            YType yObj;
             
-            bool isFirstClosure = true;
-            auto itr = cpyFuncDataVec.begin();
-            for (itr=cpyFuncDataVec.begin() ; itr != cpyFuncDataVec.end(); itr++)
+            for (IdxType i = 0; i < range; i++)
             {
-                reduceMapClosure(idxIN, range, isFirstClosure, *itr, tempMap, updVals, insVals);
+                std::tuple<IdxType, bool, IdxType> ret = backField.deleteFieldItrEvalAndStep();
                 
-                isFirstClosure = false;
-            }
-            
-            //map cached values.
-            for (IdxType k=0; k<range; k++)
-            {
-                ReduceYValue& refRy = tempMap[k];
-                
-                if (!refRy.terminated)
+                //eval deleted idx.
+                if (std::get<1>(ret))
                 {
-                    refRy.idx = _doubleSyncedMMapWrapper.get(refRy.idx);
+                    IdxType idx = backField.insertFieldEval(std::get<2>(ret), hasCacheElement, yObj);
+
+                    if (!hasCacheElement)
+                    {
+                        deletedIdxs2.push_back(_doubleSyncedMMapWrapper.get(idx));
+                    }
                 }
-            }
-            
-            //
-            // copy the reduced idxs onto _doubleSyncedMMapWrapper
-            _doubleSyncedMMapWrapper.resize(_doubleSyncedMMapWrapper.backSize() + range);
-            ReduceYValue ry;
-            IdxType idx;
-            for (IdxType k=0; k<range; k++)
-            {
-                idx = idxIN+k;
                 
-                ry = tempMap[k];
+                IdxType idx = backField.insertFieldEval(std::get<0>(ret), hasCacheElement, yObj);
                 
-                if (ry.hasInsVal)
+                if (!hasCacheElement)
                 {
-                    insVals[ry.insIdx].first = idx;
+                    IdxType mapedIdx = _doubleSyncedMMapWrapper.get(idx);
+                    
+                    _doubleSyncedMMapWrapper.persist(i + idxIN, mapedIdx);
                 }
                 else
                 {
-                    _doubleSyncedMMapWrapper.persist(idx, ry.idx);
+                    IdxType nextIdx;
                     
-                    if (ry.idx >= indexSize)
+                    if (deletedIdxs2.size() == 0)
                     {
-                        remapIdxs.push_back(idx);
+                        nextIdx = _yValMMapWrapper->size();
+                        _yValMMapWrapper->persistVal(nextIdx, yObj);
                     }
+                    else
+                    {
+                        nextIdx = deletedIdxs2.back();
+                        deletedIdxs2.pop_back();
+                    }
+                    
+                    _doubleSyncedMMapWrapper.persist(i + idxIN, nextIdx);
+                    insCount++;
                 }
             }
         };
         
-        
-        std::cout << "__1" << std::endl;
-        //
-        //reduce to double map
-        //
         rangeLoop(range, indexSize, reduceMapOntoDoubleSyncedMMapWrapper);
         
-        std::cout << "__2" << std::endl;
+        //close gaps in YVal Map.
+        IdxType idx;
+        IdxType mvidx;
+        IdxType delIdx;
+        YType yObj;
         
-        //
-        //reduce deleted idxs and push them in deltedIdxs
-        //
-        auto itr = cpyFuncDataVec.begin();
-        for (itr=cpyFuncDataVec.begin() ; itr != cpyFuncDataVec.end(); itr++)
+        for (int i = 0; i< deletedIdxs2.size() > 0; i++)
         {
-            reduceDeletedIdxs(*itr);
+            idx = indexSize - i - 1;
+            
+            mvidx = _doubleSyncedMMapWrapper.getBack(idx);
+            
+            yObj = _yValMMapWrapper->getVal(mvidx);
+            
+            delIdx = deletedIdxs2[i];
+            
+            _yValMMapWrapper->persistVal(delIdx, yObj);
+            _doubleSyncedMMapWrapper.persist(idx, delIdx);
         }
         
-        std::cout << "__3" << std::endl;
-        
-        auto processDeletedIdxs = [&deletedIdxs, indexSize] (IdxType range, std::function<void (IdxType idx, bool hasDelIdx, IdxType delIdx)> closure)
-        {
-            IdxType delVecIdx=0;
-            IdxType delIdx;
-            for (IdxType i=0; i<range; i++)
-            {
-                bool hasDelIdx=false;
-                if (delVecIdx < deletedIdxs.size())
-                {
-                    while (true)
-                    {
-                        ReduceYValue& delRy = deletedIdxs[delVecIdx];
-                        delVecIdx++;
-                        
-                        if (!delRy.terminated && delRy.idx < indexSize)
-                        {
-                            delIdx = delRy.idx;
-                            delRy.terminated = true;
-                            
-                            hasDelIdx = true;
-                            break;
-                        }
-                        
-                        if (delVecIdx >= deletedIdxs.size())
-                        {
-                            break;
-                        }
-                    }
-                }
-                
-                closure(i, hasDelIdx, delIdx);
-            }
-        };
-        
-        auto moveRemapIdxs = [this, &remapIdxs](IdxType idx, bool hasDelIdx, IdxType delIdx)
-        {
-            assert(hasDelIdx);
-            
-            IdxType mappedIdx = _doubleSyncedMMapWrapper.getBack(remapIdxs[idx]);
-            YType yv = _yValMMapWrapper->getVal(mappedIdx);
-            
-            _doubleSyncedMMapWrapper.persist(remapIdxs[idx], delIdx);
-            
-            _yValMutex.lock();
-            _yValMMapWrapper->persistVal(delIdx, yv);
-            _yValMutex.unlock();
-        };
-        
-        auto insertInsVals = [this, &insVals](IdxType idx, bool hasDelIdx, IdxType delIdx)
-        {
-            std::pair<IdxType, YType> insVal = insVals[idx];
-            
-            if (!hasDelIdx) delIdx = _yValMMapWrapper->size();
-                
-            _doubleSyncedMMapWrapper.persist(insVal.first, delIdx);
-            
-            _yValMutex.lock();
-            _yValMMapWrapper->persistVal(delIdx, insVal.second);
-            _yValMutex.unlock();
-        };
-        
-        std::cout << "__4" << std::endl;
-        
-        //
-        //move the remap idxs.
-        //
-        processDeletedIdxs(remapIdxs.size(), moveRemapIdxs);
-        
-        std::cout << "__5" << std::endl;
-        
-        //
-        //insert the YValues
-        //
-        processDeletedIdxs(insVals.size(), insertInsVals);
-        
-        std::cout << "__6" << std::endl;
         
         _mutex.lock();
         
-        auto begItr = _funcDataVec.begin();
-        std::advance(begItr,_funcDataVec.size() - cpyFuncDataVecSize);
-        _funcDataVec.erase(begItr, _funcDataVec.end());
+        backField.clear();
         
         _doubleSyncedMMapWrapper.switchMMaps();
         
-        _yValMutex.lock();
         _yValMMapWrapper->resize(indexSize);
-        _yValMutex.unlock();
         
         _mutex.unlock();
-    }
-    
-    IdxType eval(IdxType idx, std::list<FuncData>& functDataList, bool& hasInsValue, YType& yInsValue, bool contEvalWhenUpdDetected, bool& hasUpdVal, YType& yUpdValue)
-    {
-        hasUpdVal = false;
-        
-        //not needed in this context.
-        bool evalHasDelValue;
-        bool evalHasUpdValue;
-        
-        IdxType delVal;
-        IdxType updVal;
-        
-        //OPT possible optimization here?
-        bool aborted = false;
-        for(auto& funcData : functDataList)
-        {
-            idx = funcData.closure(idx, hasInsValue, yInsValue, evalHasDelValue, delVal, evalHasUpdValue, updVal);
-            
-            if (hasInsValue)
-            {
-                aborted = true;
-                break;
-            }
-            else if (!hasUpdVal && evalHasUpdValue)
-            {
-                hasUpdVal = true;
-                yUpdValue = updVal;
-                
-                if (!contEvalWhenUpdDetected)
-                {
-                    aborted = true;
-                    break;
-                }
-            }
-        }
-        
-        if (!aborted)
-        {
-            idx = _doubleSyncedMMapWrapper.get(idx);
-        }
-        
-        return idx;
     }
 };
 

@@ -149,21 +149,36 @@ private:
     {
         return _set.begin();
     }
-     
-    IdxType eval(IdxType idx, typename SetType::iterator& itr)
+    
+    std::tuple<IdxType, bool, IdxType> eval(IdxType idx, typename SetType::iterator& itr)
     {
+        std::tuple<IdxType, bool, IdxType> retTuple;
+        std::get<0>(retTuple) = idx;
+        std::get<1>(retTuple) = false;
         
-        if (itr != _set.end() && itr->idx <= idx) itr++;
+        if (itr != _set.end())
+        {
+            if (itr->idx == idx)
+            {
+                std::get<1>(retTuple) = true;
+                std::get<2>(retTuple) = idx + itr->diff - 1;
+            }
+            
+            if (itr->idx <= idx) itr++;
+        }
+        
         
         auto tempItr = itr;
         
         if (tempItr != _set.begin())
         {
             tempItr--;
-            idx += tempItr->diff;
+            std::get<0>(retTuple) += tempItr->diff;
+            
+            //idx += tempItr->diff;
         }
     
-        return idx;
+        return retTuple;
     }
     //
     //

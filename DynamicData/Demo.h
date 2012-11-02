@@ -91,7 +91,7 @@ public:
         // pos 1 -> 9
         // pos 2 -> 8
         
-        ddIndex.updateIdx(2, 1111);
+        //ddIndex.updateIdx(2, 1111);
     
         //the index now looks like this
         // pos 0 -> 10

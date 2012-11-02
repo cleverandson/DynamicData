@@ -31,18 +31,33 @@ public:
         _currIdx = 0;
     }
     
-    IdxType itrEvalAndStep()
+    std::tuple<IdxType, bool, IdxType> itrEvalAndStep()
     {
-        IdxType res = _field.eval(_currIdx, _boundaryItr);
+        std::tuple<IdxType, bool, IdxType> res = _field.eval(_currIdx, _boundaryItr);
         _currIdx++;
         
         return res;
     }
     
+    /*
+    //TODO remove?
     IdxType itrEvalAndStep(bool& hasCacheElement, CachedElement& cachedElement)
     {
         IdxType res = _field.eval(_currIdx, _boundaryItr, hasCacheElement, cachedElement);
         _currIdx++;
+        
+        return res;
+    }
+    */
+    
+    //TODO check this!
+    IdxType itrEval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
+    {
+        if (idx <= _currIdx) assert(0);
+        _currIdx = idx;
+        
+        IdxType res = _field.eval(_currIdx, _boundaryItr, hasCacheElement, cachedElement);
+        //_currIdx++;
         
         return res;
     }

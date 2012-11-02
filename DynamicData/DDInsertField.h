@@ -124,6 +124,11 @@ public:
     DDFieldIterator<IdxType, DDInsertField<IdxType, CachedElement>, CachedElement> fieldItr;
     //
     
+    void clear()
+    {
+        _vec.clear();
+    }
+
 private:
     std::vector<Element> _vec;
 

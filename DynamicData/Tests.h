@@ -289,6 +289,7 @@ public:
         std::cout << "____done____" << std::endl;
     }
     
+    /*
     static void testWithUpdateDDIndex(bool hasPersistData)
     {
         if (!hasPersistData) system("rm -r data");
@@ -332,7 +333,7 @@ public:
         
         
     }
-    
+    */
     
     
     static void testDDMMapAllocator()
@@ -436,14 +437,27 @@ public:
         
         
         m.addIdx(7);
+        m.addIdx(7);
         
         m.addIdx(5);
         
         m.addIdx(3);
+        m.addIdx(3);
         
         for (int i=0; i<8; i++)
         {
-            std::cout << "_idx_ " << i << "__ " << m.eval(i) << std::endl;
+            std::cout << "_idx_ " << i << " __ " << m.eval(i) << std::endl;
+        }
+        
+        std::cout << " ___ " << std::endl;
+        
+        m.fieldItr.startItr();
+        
+        for (int i=0; i<8; i++)
+        {
+            auto idx = m.fieldItr.itrEvalAndStep();
+            
+            std::cout << "_idx_ " << i << " __ " << std::get<0>(idx) << std::endl;
         }
         
     }
@@ -452,12 +466,13 @@ public:
     {
         DDInsertField<unsigned int, TestCacheObj> m;
         
-        m.addIdx(5, TestCacheObj(50));
-        //m.addIdx(5, TestCacheObj(51));
         
         m.addIdx(3, TestCacheObj(30));
         
         m.addIdx(7, TestCacheObj(70));
+        
+        m.addIdx(5, TestCacheObj(50));
+        m.addIdx(5, TestCacheObj(51));
         
         
         //m.debugPrint();
@@ -473,6 +488,21 @@ public:
             std::cout << "_idx_ " << i << " __ " << idx << " __ " << hasCacheElement << " _elid_ " << testCacheObj.i << std::endl;
         }
         
+        std::cout << " ___ " << std::endl;
+        
+        
+        m.fieldItr.startItr();
+        
+        TestCacheObj testCacheObj2;
+        
+        /*
+        for (int i=0; i<10; i++)
+        {
+            auto idx = m.fieldItr.itrEvalAndStep(hasCacheElement, testCacheObj2);
+        
+            std::cout << "_idx_ " << i << " __ " << idx << " __ " << hasCacheElement << " _elid_ " << testCacheObj2.i << std::endl;
+        }
+        */
     }
     
     static void testDDField()
@@ -480,9 +510,14 @@ public:
         DDField<unsigned int, TestCacheObj> field;
         
         
+        field.deleteIdx(0);
+        
         field.insertIdx(1, TestCacheObj(0));
-        field.insertIdx(1, TestCacheObj(1));
-        field.insertIdx(1, TestCacheObj(2));
+        field.insertIdx(4, TestCacheObj(1));
+        
+        field.deleteIdx(4);
+        
+        field.insertIdx(5, TestCacheObj(2));
         
         
         /*
@@ -492,15 +527,19 @@ public:
         
         //field.deleteIdx(0);
         //field.deleteIdx(1);
+        //field.deleteIdx(3);
         
         //field.deleteIdx(1);
         
         
         /*
          __oo
-         _idx_  1 __ 2
-         _idx_  2 __ 1
-         _idx_  3 __ 0
+         _idx_  1 __ 0
+         __oo
+         __oo
+         _idx_  4 __ 1
+         _idx_  5 __ 2
+         __oo
         */
         
         
@@ -513,15 +552,15 @@ public:
             auto idx = field.eval(i, hasCacheElement, testCacheObj);
             
             //std::cout << "__GG " << idx << std::endl;
-            
+            //std::cout << "__oo_ " << idx << std::endl;
             
             if (!hasCacheElement)
             {
-                std::cout << "__oo " << std::endl;
+                std::cout << i << "__oo_ " << idx << std::endl;
             }
             else
             {
-                std::cout << "_idx_  " << i << " __ " << testCacheObj.i << std::endl;
+                std::cout << i << " _idx_  " << idx << " __ " << testCacheObj.i << std::endl;
             }
             
         }

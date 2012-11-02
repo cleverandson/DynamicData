@@ -42,17 +42,37 @@ public:
         
         idx = _deleteField.eval(idx);
         _insertField.addIdx(idx, cachedElement);
+        
+        _fieldSize++;
     }
     
     void deleteIdx(IdxType idx)
     {
         _deleteField.addIdx(idx);
+        
+        _fieldSize++;
     }
     
     IdxType eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
     {
         idx = _deleteField.eval(idx);
         return _insertField.eval(idx, hasCacheElement, cachedElement);
+    }
+    
+    void startItr()
+    {
+        _insertField.fieldItr.startItr();
+        _deleteField.fieldItr.startItr();
+    }
+    
+    std::tuple<IdxType, bool, IdxType> deleteFieldItrEvalAndStep()
+    {
+        return _deleteField.fieldItr.itrEvalAndStep();
+    }
+    
+    IdxType insertFieldEval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
+    {
+        return _insertField.fieldItr.itrEval(idx, hasCacheElement, cachedElement);
     }
     
     void clear()

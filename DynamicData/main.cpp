@@ -29,7 +29,7 @@ int main(int argc, const char * argv[])
     //Tests::testDDIndex0(true);
     
     
-    //Tests::testDDIndex(false);
+    Tests::testDDIndex(false);
     //Tests::testDDIndex(true);
     
     //Tests::testDDIndex2(false);
@@ -51,7 +51,7 @@ int main(int argc, const char * argv[])
     
     //Tests::testDDDeleteField();
     //Tests::testDDInsertField();
-    Tests::testDDField();
+    //Tests::testDDField();
     
     return 0;
 }
