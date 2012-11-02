@@ -10,11 +10,14 @@
 #define DynamicData_DDDeleteField_h
 
 #include <set>
+#include "DDFieldIterator.h"
 
 template<typename IdxType>
 class DDDeleteField
 {
 private:
+    
+    class Dummy{};
     
     class CompoundElement
     {
@@ -39,10 +42,25 @@ private:
         }
     };
     
+    typedef std::set<CompoundElement, Comperator> SetType;
+    
+            
 public:
     
-    DDDeleteField() {}
+    DDDeleteField() :
+        fieldItr(*this)
+    {}
     
+    DDDeleteField(DDDeleteField&& other) :
+        _set(std::forward<std::set<CompoundElement, Comperator>>(other._set)),
+        fieldItr(*this)
+    {}
+            
+    void operator=(DDDeleteField<IdxType>&& rhs)
+    {
+        _set = std::forward<std::set<CompoundElement, Comperator>>(rhs._set);
+    }
+            
     DDDeleteField(const DDDeleteField&) = delete;
     const DDDeleteField& operator=(const DDDeleteField&) = delete;
     
@@ -84,7 +102,13 @@ public:
         
         adjustDiffs(ret.first);
     }
-    
+       
+    //
+    //iterator interface.
+    typedef typename std::set<CompoundElement, Comperator>::iterator BoundItr;
+    DDFieldIterator<IdxType, DDDeleteField<IdxType>, Dummy> fieldItr;
+    //
+            
     IdxType eval(IdxType idx)
     {
         if (_set.size() > 0)
@@ -105,21 +129,8 @@ public:
     {
         _set.clear();
     }
-    
-    /*
-     void debugPrint()
-     {
-     for (typename SetType::iterator itr = _set.begin(); itr != _set.end(); itr++)
-     {
-     std::cout << "__ " << itr->diff << std::endl;
-     }
-     }
-     */
-    
+
 private:
-    
-    typedef std::set<CompoundElement, Comperator> SetType;
-    
     SetType _set;
     
     void adjustDiffs(typename SetType::iterator& itrIN)
@@ -129,7 +140,33 @@ private:
             itr->diff++;
         }
     }
-
+      
+    //
+    //iterator interface.
+    friend class DDFieldIterator<IdxType, DDDeleteField<IdxType>, Dummy>;
+            
+    typename SetType::iterator beginItr()
+    {
+        return _set.begin();
+    }
+     
+    IdxType eval(IdxType idx, typename SetType::iterator& itr)
+    {
+        
+        if (itr != _set.end() && itr->idx <= idx) itr++;
+        
+        auto tempItr = itr;
+        
+        if (tempItr != _set.begin())
+        {
+            tempItr--;
+            idx += tempItr->diff;
+        }
+    
+        return idx;
+    }
+    //
+    //
 };
 
 #endif

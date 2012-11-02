@@ -14,28 +14,33 @@ class DDActivePassivePtr
 {
 public:
     
-    DDActivePassivePtr(std::shared_ptr<PtrObj> activeObj, std::shared_ptr<PtrObj> passiveObj) :
-        _activeObj(activeObj),
-        _passiveObj(passiveObj)
-    { }
+    //disable none rvalue construction.
+    DDActivePassivePtr(PtrObj& activeObj, PtrObj& passiveObj) = delete;
+    
+    DDActivePassivePtr(PtrObj&& activeObj, PtrObj&& passiveObj) :
+        _activeObj(std::forward<PtrObj>(activeObj)),
+        _passiveObj(std::forward<PtrObj>(passiveObj))
+    {
+    
+    }
     
     DDActivePassivePtr(const DDActivePassivePtr&) = delete;
     const DDActivePassivePtr& operator=(const DDActivePassivePtr&) = delete;
     
-    std::shared_ptr<PtrObj> operator->() { return _activeObj; }
+    PtrObj* operator->() { return &_activeObj; }
     
-    std::shared_ptr<PtrObj>  back() { return _passiveObj; }
+    PtrObj&  back() { return _passiveObj; }
     
     void swap()
     {
-        std::shared_ptr<PtrObj> temp = _activeObj;
-        _activeObj = _passiveObj;
-        _passiveObj = temp;
+        PtrObj temp(std::move(_activeObj));
+        _activeObj = std::move(_passiveObj);
+        _passiveObj = std::move(temp);
     }
 
 private:
-    std::shared_ptr<PtrObj> _activeObj;
-    std::shared_ptr<PtrObj> _passiveObj;
+    PtrObj _activeObj;
+    PtrObj _passiveObj;
 };
 
 #endif

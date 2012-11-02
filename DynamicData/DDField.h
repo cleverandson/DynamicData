@@ -9,6 +9,8 @@
 #ifndef DynamicData_DDField_h
 #define DynamicData_DDField_h
 
+#include <utility>
+
 #include "DDInsertField.h"
 #include "DDDeleteField.h"
 
@@ -18,6 +20,18 @@ class DDField
 public:
     
     DDField() {}
+    
+    DDField(DDField<IdxType, CachedElement>&& other) :
+        _insertField(std::forward<DDInsertField<IdxType, CachedElement>>(other._insertField)),
+        _deleteField(std::forward<DDDeleteField<IdxType>>(other._deleteField)),
+        _fieldSize(0)
+    {}
+    
+    void operator=(DDField<IdxType, CachedElement>&& rhs)
+    {
+        _insertField = std::forward<DDInsertField<IdxType, CachedElement>>(rhs._insertField);
+        _deleteField = std::forward<DDDeleteField<IdxType>>(rhs._deleteField);
+    }
     
     DDField(const DDField&) = delete;
     const DDField& operator=(const DDField&) = delete;
@@ -47,9 +61,15 @@ public:
         _deleteField.clear();
     }
     
+    size_t size()
+    {
+        return _fieldSize;
+    }
+    
 private:
     DDInsertField<IdxType, CachedElement> _insertField;
     DDDeleteField<IdxType> _deleteField;
+    size_t _fieldSize;
 };
 
 

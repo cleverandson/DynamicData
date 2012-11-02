@@ -10,6 +10,7 @@
 #define DynamicData_DDInsertField_h
 
 #include <vector>
+#include "DDFieldIterator.h"
 
 template<typename IdxType, class CachedElement>
 class DDInsertField
@@ -53,8 +54,22 @@ private:
             
 public:
     
-    DDInsertField() {}
+    DDInsertField() :
+        fieldItr(*this)
+    {}
             
+    DDInsertField(DDInsertField&& other) :
+        fieldItr(*this),
+        _vec(std::forward<std::vector<Element>>(other._vec))
+    {}
+            
+    DDInsertField<IdxType, CachedElement>& operator=(DDInsertField<IdxType, CachedElement>&& rhs)
+    {
+        _vec = std::forward<std::vector<Element>>(rhs._vec);
+        
+        return *this;
+    }
+
     DDInsertField(const DDInsertField&) = delete;
     const DDInsertField& operator=(const DDInsertField&) = delete;
     
@@ -87,12 +102,65 @@ public:
 
         adjustIdxs(biggerThanItr);
     }
-            
+
     IdxType eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        hasCacheElement = false;
-        
         auto biggerThanItr = std::equal_range(_vec.begin(), _vec.end(), Element(idx), Comperator()).second;
+
+        return evalImpl(idx, biggerThanItr, hasCacheElement, cachedElement);
+    }
+            
+    void debugPrint()
+    {
+        for (typename std::vector<Element>::iterator itr = _vec.begin(); itr != _vec.end(); itr++)
+        {
+            std::cout << "_i_ " << itr->idx << "_d_ " << itr->diff << std::endl;
+        }
+    }
+
+    //
+    //iterator interface.
+    typedef typename std::vector<Element>::iterator BoundItr;
+    DDFieldIterator<IdxType, DDInsertField<IdxType, CachedElement>, CachedElement> fieldItr;
+    //
+    
+private:
+    std::vector<Element> _vec;
+
+    void adjustIdxs(typename std::vector<Element>::iterator& itr)
+    {
+        while (itr != _vec.end())
+        {
+            itr->idx++;
+            itr->diff++;
+            itr++;
+        }
+    }
+            
+    //
+    //iterator interface.
+    friend class DDFieldIterator<IdxType, DDInsertField<IdxType, CachedElement>, CachedElement>;
+            
+    typename std::vector<Element>::iterator beginItr()
+    {
+        return _vec.begin();
+    }
+      
+    IdxType eval(IdxType idx, typename std::vector<Element>::iterator& biggerThanItr, bool& hasCacheElement, CachedElement& cachedElement)
+    {
+        if (biggerThanItr != _vec.end() && biggerThanItr->idx == idx)
+        {
+            biggerThanItr++;
+        }
+        
+        return evalImpl(idx, biggerThanItr, hasCacheElement, cachedElement);
+    }
+    //
+    //
+    
+    IdxType evalImpl(IdxType idx, typename std::vector<Element>::iterator& biggerThanItr, bool& hasCacheElement, CachedElement& cachedElement)
+    {
+        hasCacheElement = false;
         
         //check for cached values.
         if (biggerThanItr != _vec.end())
@@ -103,7 +171,6 @@ public:
             
             if (idxDiff < numbOfElements)
             {
-                //cachedElement = biggerThanItr->cachedElements[numbOfElements - idxDiff - 1];
                 cachedElement = biggerThanItr->cachedElements[idxDiff];
                 hasCacheElement = true;
             }
@@ -118,27 +185,6 @@ public:
         }
         
         return idx;
-    }
-            
-    void debugPrint()
-    {
-        for (typename std::vector<Element>::iterator itr = _vec.begin(); itr != _vec.end(); itr++)
-        {
-            std::cout << "_i_ " << itr->idx << "_d_ " << itr->diff << std::endl;
-        }
-    }
-
-private:
-    std::vector<Element> _vec;
-
-    void adjustIdxs(typename std::vector<Element>::iterator& itr)
-    {
-        while (itr != _vec.end())
-        {
-            itr->idx++;
-            itr->diff++;
-            itr++;
-        }
     }
 };
 
