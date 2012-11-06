@@ -256,8 +256,12 @@ public:
                 
                 if (!hasCacheElement)
                 {
-                    idx = _doubleSyncedMMapWrapper.get(idx);
-                    yVal = _yValMMapWrapper->getVal(idx);
+                    IdxType idx2 = _doubleSyncedMMapWrapper.get(idx);
+                 
+                    {
+                        std::unique_lock<std::mutex> lock(_yValMutex);
+                        yVal = _yValMMapWrapper->getVal(idx2);
+                    }
                 }
             }
 
@@ -351,10 +355,12 @@ private:
     
     //YVal Wrapper.
     std::unique_ptr<MMapWrapper<IdxType, YType, YValMapHeader>> _yValMMapWrapper;
+    std::mutex _yValMutex;
     
     IdxType _size;
     
     std::mutex _mutex;
+    
     std::atomic<int> _shoutdownCount;
     
     std::thread _reduceAndSwapThread;
@@ -405,6 +411,8 @@ private:
         
         _mutex.unlock();
         
+
+        
         
         //TODO test.
         IdxType range = 200;
@@ -430,62 +438,83 @@ private:
             }
         };
         
-    
-        //xxx
+        
         backField.startItr();
         std::vector<IdxType> deletedIdxs2;
-        size_t insCount = 0;
+        std::vector<IdxType> remapIdxs;
         
-        auto reduceMapOntoDoubleSyncedMMapWrapper = [this, &backField, &deletedIdxs2, &insCount] (IdxType idxIN, IdxType range)
+        auto reduceMapOntoDoubleSyncedMMapWrapper = [this, &backField, &deletedIdxs2, &indexSize, &remapIdxs] (IdxType idxIN, IdxType range)
         {
             bool hasCacheElement;
             YType yObj;
             
             for (IdxType i = 0; i < range; i++)
             {
+                IdxType idx = i + idxIN;
+                
+                //TODO remove tuple.
                 std::tuple<IdxType, bool, IdxType> ret = backField.deleteFieldItrEvalAndStep();
+                IdxType delFIdx = std::get<0>(ret);
                 
-                //eval deleted idx.
-                if (std::get<1>(ret))
-                {
-                    IdxType idx = backField.insertFieldEval(std::get<2>(ret), hasCacheElement, yObj);
-
-                    if (!hasCacheElement)
-                    {
-                        deletedIdxs2.push_back(_doubleSyncedMMapWrapper.get(idx));
-                    }
-                }
-                
-                IdxType idx = backField.insertFieldEval(std::get<0>(ret), hasCacheElement, yObj);
+                IdxType mappedFieldidx = backField.insertFieldEval(delFIdx, hasCacheElement, yObj);
                 
                 if (!hasCacheElement)
                 {
-                    IdxType mapedIdx = _doubleSyncedMMapWrapper.get(idx);
+                    IdxType mappedIdx = _doubleSyncedMMapWrapper.get(mappedFieldidx);
                     
-                    _doubleSyncedMMapWrapper.persist(i + idxIN, mapedIdx);
+                    //remap idxs which are too big.
+                    if (mappedIdx >= indexSize)
+                    {
+                        remapIdxs.push_back(idx);
+                    }
+                    
+                    _doubleSyncedMMapWrapper.persist(idx, mappedIdx);
                 }
                 else
                 {
                     IdxType nextIdx;
                     
-                    if (deletedIdxs2.size() == 0)
+                    std::unique_lock<std::mutex> lock(_yValMutex);
+                    
+                    nextIdx = _yValMMapWrapper->size();
+                    _yValMMapWrapper->persistVal(nextIdx, yObj);
+                     
+                    if (nextIdx >= indexSize)
                     {
-                        nextIdx = _yValMMapWrapper->size();
-                        _yValMMapWrapper->persistVal(nextIdx, yObj);
-                    }
-                    else
-                    {
-                        nextIdx = deletedIdxs2.back();
-                        deletedIdxs2.pop_back();
+                        remapIdxs.push_back(idx);
                     }
                     
-                    _doubleSyncedMMapWrapper.persist(i + idxIN, nextIdx);
-                    insCount++;
+                    _doubleSyncedMMapWrapper.persist(idx, nextIdx);
                 }
             }
         };
         
         rangeLoop(range, indexSize, reduceMapOntoDoubleSyncedMMapWrapper);
+        
+        
+        
+        backField.startItr();
+        
+        //collect idxs to delete.
+        std::vector<IdxType> delIdxs = backField.deleteFieldAllDeleteIdxs();
+        
+        for (auto itr = delIdxs.begin(); itr<delIdxs.end(); itr++)
+        {
+            bool hasCacheElement;
+            YType yObj;
+            
+            IdxType idx = backField.insertFieldEval(*itr, hasCacheElement, yObj);
+            
+            if (!hasCacheElement)
+            {
+                IdxType mappedIdx = _doubleSyncedMMapWrapper.get(idx);
+                
+                if (mappedIdx < indexSize)
+                {
+                    deletedIdxs2.push_back(mappedIdx);
+                }
+            }
+        }
         
         //close gaps in YVal Map.
         IdxType idx;
@@ -493,9 +522,28 @@ private:
         IdxType delIdx;
         YType yObj;
         
-        for (int i = 0; i< deletedIdxs2.size() > 0; i++)
+        //TODO check what happens if indexSize == 0!!
+        IdxType tailIdx = indexSize - 1;
+        
+        IdxType remapIdx = 0;
+        
+        assert(deletedIdxs2.size() >= remapIdxs.size());
+        
+        for (IdxType i = 0; i< deletedIdxs2.size() > 0; i++)
         {
-            idx = indexSize - i - 1;
+            std::unique_lock<std::mutex> lock(_yValMutex);
+            
+            if (remapIdxs.size() > remapIdx)
+            {
+                idx = remapIdxs[remapIdx];
+                remapIdx++;
+            }
+            else
+            {
+                idx = tailIdx;
+                tailIdx--;
+            }
+            
             
             mvidx = _doubleSyncedMMapWrapper.getBack(idx);
             
@@ -512,9 +560,15 @@ private:
         
         backField.clear();
         
+        
+        _doubleSyncedMMapWrapper.resize(indexSize);
         _doubleSyncedMMapWrapper.switchMMaps();
         
-        _yValMMapWrapper->resize(indexSize);
+        
+        {
+            std::unique_lock<std::mutex> lock(_yValMutex);
+            _yValMMapWrapper->resize(indexSize);
+        }
         
         _mutex.unlock();
     }

@@ -9,6 +9,7 @@
 #ifndef DynamicData_DDFieldIterator_h
 #define DynamicData_DDFieldIterator_h
 
+//TODO make two classes for the two fields.
 template<typename IdxType, class Field, class CachedElement>
 class DDFieldIterator
 {
@@ -53,7 +54,7 @@ public:
     //TODO check this!
     IdxType itrEval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        if (idx <= _currIdx) assert(0);
+        if (idx < _currIdx) assert(0);
         _currIdx = idx;
         
         IdxType res = _field.eval(_currIdx, _boundaryItr, hasCacheElement, cachedElement);

@@ -31,6 +31,7 @@ public:
     {
         _insertField = std::forward<DDInsertField<IdxType, CachedElement>>(rhs._insertField);
         _deleteField = std::forward<DDDeleteField<IdxType>>(rhs._deleteField);
+        _fieldSize = rhs._fieldSize;
     }
     
     DDField(const DDField&) = delete;
@@ -68,6 +69,11 @@ public:
     std::tuple<IdxType, bool, IdxType> deleteFieldItrEvalAndStep()
     {
         return _deleteField.fieldItr.itrEvalAndStep();
+    }
+    
+    std::vector<IdxType> deleteFieldAllDeleteIdxs()
+    {
+        return _deleteField.allDeleteIdxs();
     }
     
     IdxType insertFieldEval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)

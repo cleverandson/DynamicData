@@ -130,6 +130,24 @@ public:
         _set.clear();
     }
 
+    std::vector<IdxType> allDeleteIdxs()
+    {
+        std::vector<IdxType> vec;
+        IdxType lastDiff = 0;
+        
+        for (auto itr = _set.begin(); itr != _set.end(); itr++)
+        {
+            for (IdxType i=0; i<(itr->diff - lastDiff); i++)
+            {
+                vec.push_back(itr->idx + i + lastDiff);
+            }
+            
+            lastDiff = itr->diff;
+        }
+        
+        return vec;
+    }
+
 private:
     SetType _set;
     
@@ -156,26 +174,17 @@ private:
         std::get<0>(retTuple) = idx;
         std::get<1>(retTuple) = false;
         
-        if (itr != _set.end())
-        {
-            if (itr->idx == idx)
-            {
-                std::get<1>(retTuple) = true;
-                std::get<2>(retTuple) = idx + itr->diff - 1;
-            }
-            
-            if (itr->idx <= idx) itr++;
-        }
+        while (itr != _set.end() && itr->idx <= idx) itr++;
         
+        assert(itr == _set.end() || itr->idx > idx);
         
         auto tempItr = itr;
         
+        //TODO performance!
         if (tempItr != _set.begin())
         {
             tempItr--;
             std::get<0>(retTuple) += tempItr->diff;
-            
-            //idx += tempItr->diff;
         }
     
         return retTuple;

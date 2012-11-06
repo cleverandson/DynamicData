@@ -29,7 +29,7 @@ int main(int argc, const char * argv[])
     //Tests::testDDIndex0(true);
     
     
-    Tests::testDDIndex(false);
+    //Tests::testDDIndex(false);
     //Tests::testDDIndex(true);
     
     //Tests::testDDIndex2(false);
@@ -42,7 +42,14 @@ int main(int argc, const char * argv[])
     //Tests::testWithUpdateDDIndex(false);
     
     
-    //Tests::testFileSizes();
+    //Tests::testTempTest(false);
+    //Tests::testTempTest(true);
+    
+    
+    //Tests::tester();
+    
+    
+    Tests::testFileSizes();
     
     //Tests::testDDLoopReduce();
     //Tests::testDDSpawn();

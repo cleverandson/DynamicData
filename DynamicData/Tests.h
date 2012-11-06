@@ -113,27 +113,53 @@ public:
         std::cout << "done " << std::endl;
     }
     
+    class TestCacheObj
+    {
+    public:
+        
+        TestCacheObj() :
+        i(0),
+        k(0)
+        {}
+        
+        TestCacheObj(int t) :
+        i(t)
+        {}
+        
+        int i;
+        int k;
+        int k3;
+        int k4;
+        int k5;
+        int k6;
+        int k7;
+    };
+
     static void testFileSizes()
     {
         system("rm -r data");
         
-        DDIndex<unsigned long, unsigned long> ddIndex(2, 0, 1, 2);
+        std::cout << "_1111_ " << std::endl;
         
-        for (int i = 0; i<40000; i++)
+        DDIndex<unsigned long, TestCacheObj> ddIndex(2, 0, 1, 2);
+        
+        for (int i = 0; i<1000000; i++)
         {
             ddIndex.insertIdx(0, i);
         }
         
-        
+        /*
         std::cout << "_s1_ " << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(3));
         std::cout << "_s2_ " << std::endl;
+        */
         
-        
-        for (int i = 0; i<39950; i++)
+        /*
+        for (int i = 0; i<50; i++)
         {
             ddIndex.deleteIdx(0);
         }
+        */
         
         std::cout << "_done_ " << std::endl;
     }
@@ -155,9 +181,11 @@ public:
                 refList.push_front(i);
             }
             
+            
             std::cout << "__sleep " << std::endl;
             std::this_thread::sleep_for(std::chrono::seconds(2));
             std::cout << "______ " << std::endl;
+            
             
             int count = 0;
             int index=0;
@@ -205,11 +233,13 @@ public:
         if (!hasPersistData) ddIndex.deleteIdx(0);
         refList.pop_front();
         
-        if (!hasPersistData) ddIndex.deleteIdx(6);
         
+        
+        if (!hasPersistData) ddIndex.deleteIdx(6);
         auto itr = refList.begin();
         std::advance(itr,6);
         refList.erase(itr);
+        
         
         //std::cout << "_11____" << std::endl;
         
@@ -223,6 +253,13 @@ public:
         itr = refList.begin();
         std::advance(itr,6);
         refList.erase(itr);
+        
+        
+        
+        std::cout << "_s1_ " << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "_s2_ " << std::endl;
+        
         
         //if (!hasPersistData) ddIndex.mapFunctsDBug();
         
@@ -413,24 +450,6 @@ public:
         std::cout << "exit " << std::endl;
     }
     
-    class TestCacheObj
-    {
-    public:
-        
-        TestCacheObj() :
-            i(0),
-            k(0)
-        {}
-        
-        TestCacheObj(int t) :
-            i(t)
-        {}
-        
-        int i;
-        int k;
-    };
-    
-    
     static void testDDDeleteField()
     {
         DDDeleteField<unsigned int> m;
@@ -505,6 +524,7 @@ public:
         */
     }
     
+    /*
     static void testDDField()
     {
         DDField<unsigned int, TestCacheObj> field;
@@ -519,29 +539,13 @@ public:
         
         field.insertIdx(5, TestCacheObj(2));
         
-        
-        /*
-        field.insertIdx(0, TestCacheObj(2));
-        field.insertIdx(0, TestCacheObj(3));
-        */
-        
+     
         //field.deleteIdx(0);
         //field.deleteIdx(1);
         //field.deleteIdx(3);
         
         //field.deleteIdx(1);
-        
-        
-        /*
-         __oo
-         _idx_  1 __ 0
-         __oo
-         __oo
-         _idx_  4 __ 1
-         _idx_  5 __ 2
-         __oo
-        */
-        
+ 
         
         TestCacheObj testCacheObj;
         bool hasCacheElement;
@@ -564,6 +568,77 @@ public:
             }
             
         }
+    }
+    */
+    
+    static void testTempTest(bool hasPersistData)
+    {
+        if (!hasPersistData) system("rm -r data");
+        
+        DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
+        bool succeeded;
+        
+        std::list<unsigned long> refList;
+        
+        for (int i = 0; i<10; i++)
+        {
+            if (!hasPersistData) ddIndex.insertIdx(0, i);
+            refList.push_front(i);
+            
+            
+            //ddIndex.debugMapFunction();
+        }
+        
+        //ddIndex.debugMapFunction();
+        //ddIndex.debugPrint();
+        
+        if (!hasPersistData) ddIndex.deleteIdx(0);
+        auto itr = refList.begin();
+        std::advance(itr,0);
+        refList.erase(itr);
+        
+        //ddIndex.debugMapFunction();
+        
+        //ddIndex.debugPrint();
+        
+        if (!hasPersistData) ddIndex.deleteIdx(3);
+        itr = refList.begin();
+        std::advance(itr,3);
+        refList.erase(itr);
+        
+        
+        //ddIndex.debugMapFunction();
+        
+        
+        if (!hasPersistData) ddIndex.deleteIdx(3);
+        itr = refList.begin();
+        std::advance(itr,3);
+        refList.erase(itr);
+        
+        //ddIndex.debugMapFunction();
+        
+        std::cout << "_s1_ " << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::cout << "_s2_ " << std::endl;
+        
+        
+        std::cout << "____DDD____" << std::endl;
+        
+        int index=0;
+        for(auto iter = refList.begin(); iter != refList.end(); iter++)
+        {
+            unsigned long ddVal = ddIndex.get(index, succeeded);
+            unsigned long listVal = *iter;
+            
+            //std::cout << "____GET____" << ddVal << " _l_ " << listVal << std::endl;
+            
+            assert(listVal == ddVal);
+            
+            index++;
+        }
+        
+        
+        std::cout << "____done____" << std::endl;
     }
     
 };

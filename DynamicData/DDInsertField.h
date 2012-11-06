@@ -150,10 +150,10 @@ private:
     {
         return _vec.begin();
     }
-      
+
     IdxType eval(IdxType idx, typename std::vector<Element>::iterator& biggerThanItr, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        if (biggerThanItr != _vec.end() && biggerThanItr->idx == idx)
+        while (biggerThanItr != _vec.end() && biggerThanItr->idx <= idx)
         {
             biggerThanItr++;
         }
