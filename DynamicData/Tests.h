@@ -119,7 +119,8 @@ public:
         
         TestCacheObj() :
         i(0),
-        k(0)
+        k(0),
+        k7(1111)
         {}
         
         TestCacheObj(int t) :
@@ -145,7 +146,7 @@ public:
         
         for (int i = 0; i<1000000; i++)
         {
-            ddIndex.insertIdx(0, i);
+            ddIndex.insertIdx(i, i);
         }
         
         /*
@@ -154,12 +155,14 @@ public:
         std::cout << "_s2_ " << std::endl;
         */
         
-        /*
-        for (int i = 0; i<50; i++)
+        
+        for (int i = 0; i<999999; i++)
         {
             ddIndex.deleteIdx(0);
         }
-        */
+        
+        //ddIndex.get(, )
+        //k7
         
         std::cout << "_done_ " << std::endl;
     }
@@ -171,7 +174,6 @@ public:
         
         {
             DDIndex<unsigned long, unsigned long> ddIndex(2, 0, 1, 2);
-            bool succeeded;
             
             std::list<unsigned long> refList;
             
@@ -191,7 +193,7 @@ public:
             int index=0;
             for(auto iter = refList.begin(); iter != refList.end(); iter++)
             {
-                unsigned long ddVal = ddIndex.get(index, succeeded);
+                unsigned long ddVal = ddIndex.get(index);
                 
                 //std::cout << "val__ " << ddVal << std::endl;
                 /*
@@ -220,7 +222,6 @@ public:
         if (!hasPersistData) system("rm -r data");
         
         DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
-        bool succeeded;
         
         std::list<unsigned long> refList;
         
@@ -266,7 +267,7 @@ public:
         int index=0;
         for(auto iter = refList.begin(); iter != refList.end(); iter++)
         {
-            unsigned long ddVal = ddIndex.get(index, succeeded);
+            unsigned long ddVal = ddIndex.get(index);
             
             //std::cout << "  ___ "  << ddVal << "  __11___ " << *iter << std::endl;
             
@@ -283,7 +284,6 @@ public:
         if (!hasPersistData) system("rm -r data");
         
         DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
-        bool succeeded;
         
         std::list<unsigned long> refList;
         
@@ -317,7 +317,7 @@ public:
         int index=0;
         for(auto iter = refList.begin(); iter != refList.end(); iter++)
         {
-            unsigned long ddVal = ddIndex.get(index, succeeded);
+            unsigned long ddVal = ddIndex.get(index);
             assert(*iter == ddVal);
             
             index++;
@@ -450,6 +450,7 @@ public:
         std::cout << "exit " << std::endl;
     }
     
+    /*
     static void testDDDeleteField()
     {
         DDDeleteField<unsigned int> m;
@@ -480,7 +481,8 @@ public:
         }
         
     }
-
+    */
+    
     static void testDDInsertField()
     {
         DDInsertField<unsigned int, TestCacheObj> m;
@@ -576,7 +578,6 @@ public:
         if (!hasPersistData) system("rm -r data");
         
         DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
-        bool succeeded;
         
         std::list<unsigned long> refList;
         
@@ -627,7 +628,7 @@ public:
         int index=0;
         for(auto iter = refList.begin(); iter != refList.end(); iter++)
         {
-            unsigned long ddVal = ddIndex.get(index, succeeded);
+            unsigned long ddVal = ddIndex.get(index);
             unsigned long listVal = *iter;
             
             //std::cout << "____GET____" << ddVal << " _l_ " << listVal << std::endl;

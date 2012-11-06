@@ -49,7 +49,7 @@ int main(int argc, const char * argv[])
     //Tests::tester();
     
     
-    Tests::testFileSizes();
+    //Tests::testFileSizes();
     
     //Tests::testDDLoopReduce();
     //Tests::testDDSpawn();

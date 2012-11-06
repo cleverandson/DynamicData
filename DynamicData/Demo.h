@@ -58,8 +58,7 @@ public:
         //values have been persistently saved.
         for (int i=0; i<ddIndex.size(); i++)
         {
-            bool succeeded;
-            std::cout << "pos " << i << " value " << ddIndex.get(i, succeeded) << std::endl;
+            std::cout << "pos " << i << " value " << ddIndex.get(i) << std::endl;
         }
         
         //the printed result should look like this

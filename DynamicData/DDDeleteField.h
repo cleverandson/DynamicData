@@ -168,12 +168,8 @@ private:
         return _set.begin();
     }
     
-    std::tuple<IdxType, bool, IdxType> eval(IdxType idx, typename SetType::iterator& itr)
+    IdxType eval(IdxType idx, typename SetType::iterator& itr)
     {
-        std::tuple<IdxType, bool, IdxType> retTuple;
-        std::get<0>(retTuple) = idx;
-        std::get<1>(retTuple) = false;
-        
         while (itr != _set.end() && itr->idx <= idx) itr++;
         
         assert(itr == _set.end() || itr->idx > idx);
@@ -184,10 +180,10 @@ private:
         if (tempItr != _set.begin())
         {
             tempItr--;
-            std::get<0>(retTuple) += tempItr->diff;
+            idx += tempItr->diff;
         }
     
-        return retTuple;
+        return idx;
     }
     //
     //

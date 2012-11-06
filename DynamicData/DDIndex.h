@@ -238,10 +238,11 @@ public:
     DDIndex(const DDIndex&) = delete;
     const DDIndex& operator=(const DDIndex&) = delete;
     
-    YType get(IdxType idx, bool& succeeded)
+    YType get(IdxType idx)
     {
-        succeeded = false;
         YType yVal;
+        
+        assert(idx < _size);
         
         if (idx < _size)
         {
@@ -266,8 +267,6 @@ public:
             }
 
             _mutex.unlock();
-            
-            succeeded = true;
         }
         
         return yVal;
@@ -453,10 +452,9 @@ private:
                 IdxType idx = i + idxIN;
                 
                 //TODO remove tuple.
-                std::tuple<IdxType, bool, IdxType> ret = backField.deleteFieldItrEvalAndStep();
-                IdxType delFIdx = std::get<0>(ret);
+                IdxType ret = backField.deleteFieldItrEvalAndStep();
                 
-                IdxType mappedFieldidx = backField.insertFieldEval(delFIdx, hasCacheElement, yObj);
+                IdxType mappedFieldidx = backField.insertFieldEval(ret, hasCacheElement, yObj);
                 
                 if (!hasCacheElement)
                 {

@@ -32,9 +32,9 @@ public:
         _currIdx = 0;
     }
     
-    std::tuple<IdxType, bool, IdxType> itrEvalAndStep()
+    IdxType itrEvalAndStep()
     {
-        std::tuple<IdxType, bool, IdxType> res = _field.eval(_currIdx, _boundaryItr);
+        IdxType res = _field.eval(_currIdx, _boundaryItr);
         _currIdx++;
         
         return res;

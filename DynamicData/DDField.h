@@ -66,7 +66,7 @@ public:
         _deleteField.fieldItr.startItr();
     }
     
-    std::tuple<IdxType, bool, IdxType> deleteFieldItrEvalAndStep()
+    IdxType deleteFieldItrEvalAndStep()
     {
         return _deleteField.fieldItr.itrEvalAndStep();
     }
