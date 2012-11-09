@@ -69,13 +69,15 @@ private:
         
         DoubleSyncedMMapWrapper(DoubleSyncedMMapWrapper&& other) :
             _mmapWrapper1(std::forward<MMapWrapperPtr<IdxType, IdxType, MMapHeader>>(other._mmapWrapper1)),
-            _mmapWrapper2(std::forward<MMapWrapperPtr<IdxType, IdxType, MMapHeader>>(other._mmapWrapper2))
+            _mmapWrapper2(std::forward<MMapWrapperPtr<IdxType, IdxType, MMapHeader>>(other._mmapWrapper2)),
+            _activeMapIdx(other._activeMapIdx)
         {}
         
         void operator=(DoubleSyncedMMapWrapper&& rhs)
         {
             _mmapWrapper1.swap(rhs._mmapWrapper1);
             _mmapWrapper2.swap(rhs._mmapWrapper2);
+            _activeMapIdx = rhs._activeMapIdx;
         }
         
         DoubleSyncedMMapWrapper(const DoubleSyncedMMapWrapper&) = delete;
@@ -223,7 +225,6 @@ private:
     private:
         MMapWrapperPtr<IdxType, IdxType, MMapHeader> _mmapWrapper1;
         MMapWrapperPtr<IdxType, IdxType, MMapHeader> _mmapWrapper2;
-        
         unsigned int _activeMapIdx;
     };
     
@@ -252,7 +253,8 @@ public:
     void operator=(DDIndex&& rhs)
     {
         finish();
-        
+        rhs.finish();
+     
         _doubleSyncedMMapWrapper = std::forward<DoubleSyncedMMapWrapper>(rhs._doubleSyncedMMapWrapper);
         _yValMMapWrapper.swap(rhs._yValMMapWrapper);
         _size = rhs._size;

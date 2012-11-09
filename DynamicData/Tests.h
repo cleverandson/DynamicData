@@ -651,7 +651,7 @@ public:
         }
     private:
         int i;
-        //int arr[30];
+        int arr[30];
     };
     
     static void testDDBenchmarks()

@@ -12,6 +12,7 @@
 #include <random>
 #include <functional>
 #include <chrono>
+#include <iomanip>
 
 #include "DDIndex.h"
 
@@ -112,6 +113,37 @@ private:
         }
         
         DDIndex<IdxType, StoredType> ddIndex;
+    };
+    
+    template<size_t NumOfWrites>
+    class RandomWriteBenchmark
+    {
+    public:
+        
+        void run(DDIndexWrapper& ddIndexWrapper, Stats& stats)
+        {
+            ddIndexWrapper.clearDDIndex();
+            
+            Duration duration;
+            
+            IdxType randInsertIdx;
+            IdxType indexSize;
+            
+            auto randGen = RandomGen<0, NumOfWrites>();
+            
+            for (int i=0; i<NumOfWrites; i++)
+            {
+                //std::cout << "_ee" << std::endl;
+                
+                indexSize = ddIndexWrapper.ddIndex.size();
+                if (indexSize > 0) randInsertIdx = randGen.randVal() % indexSize;
+                else randInsertIdx = 0;
+            
+                ddIndexWrapper.ddIndex.insertIdx(randInsertIdx, StoredType::rand());
+            }
+            
+            stats.benchmarkRes("RandomWriteBenchmark", duration.elapsed(), NumOfWrites);
+        }
     };
     
     template<size_t NumOfWrites>
@@ -223,11 +255,15 @@ public:
         static const size_t RandomReads = 100000;
         static const size_t SequentialReads = 100000;
         static const size_t SequentialWrites = 100000;
+        static const size_t RandomWrites = 100000;
         
         DDBenchmarks::runAll<Dummy,
+        
             RandomReadBenchmark<RandomReads, DDIndexSize>,
             SequentialReadBenchmark<SequentialReads>,
-            SequentialWriteBenchmark<SequentialWrites>
+            SequentialWriteBenchmark<SequentialWrites>,
+            RandomWriteBenchmark<RandomWrites>
+        
             //... more benchmarks.
         >(ddIndexWrapper, stats);
     }
