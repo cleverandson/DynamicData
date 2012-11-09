@@ -11,7 +11,9 @@
 
 #include <unistd.h>
 #include <assert.h>
+
 #include "DDUtils.h"
+#include "DDFileHandle.h"
 
 template<typename IdxType, class Type, class UserDataHeader>
 class MMapWrapper
@@ -25,18 +27,18 @@ public:
         IdxType mapSize;
     };
     
-    MMapWrapper(std::string filePath, IdxType paddingSize) :
+    MMapWrapper(DDFileHandle&& ddFileHandle, IdxType paddingSize) :
         _mapSize(0),
         _fileSize(0),
-        _filePath(filePath),
+        _ddFileHandle(std::move(ddFileHandle)),
         _paddingSize(paddingSize),
         _triplePaddingSize(paddingSize * 3),
         _headerSize(sizeof(HeaderData) + sizeof(UserDataHeader)),
         _isMapped(false),
         _userDataHeaderPtr(0)
     {
-        _fileDesc = open(_filePath.c_str(), O_RDWR | O_CREAT, (mode_t)0600);
-        off_t rawFileSize = DDUtils::fileSize(_filePath);
+        _fileDesc = open(_ddFileHandle.path().c_str(), O_RDWR | O_CREAT, (mode_t)0600);
+        off_t rawFileSize = _ddFileHandle.fileSize();
         
         //create a new file.
         if (rawFileSize == 0)
@@ -69,6 +71,11 @@ public:
     
     MMapWrapper(const MMapWrapper&) = delete;
     const MMapWrapper& operator=(const MMapWrapper&) = delete;
+    
+    void unpersist()
+    {
+        _ddFileHandle.unpersist();
+    }
     
     Type getVal(IdxType idx)
     {
@@ -152,7 +159,7 @@ private:
     
     IdxType _mapSize;
     IdxType _fileSize;
-    std::string _filePath;
+    DDFileHandle _ddFileHandle;
     IdxType _paddingSize;
     IdxType _triplePaddingSize;
     IdxType _headerSize;

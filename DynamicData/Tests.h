@@ -18,6 +18,7 @@
 #include "DDInsertField.h"
 #include "DDDeleteField.h"
 #include "DDField.h"
+#include "DDBenchmarks.h"
 
 class Tests
 {
@@ -61,7 +62,7 @@ public:
         int test;
     };
     
-    
+    /*
     static void testMMapWrapper()
     {
         std::cout << "start " << std::endl;
@@ -92,26 +93,11 @@ public:
             wmap.persistVal(i, i);
         }
         
-        /*
-        for (int i=0; i<9999; i++)
-        {
-            wmap.deleteIdx(0, [](ULongLong oldIdx, ULongLong remapIdx) {});
-        }
-        */
-        
-        //wmap.shrinkSize(9);
-        
-        /*
-        for (int i=0; i<10000; i++)
-        {
-            wmap.presistVal(i, i);
-        }
-        */
-        
         std::cout << "filesize_e_ " << wmap.fileSize() << std::endl;
         
         std::cout << "done " << std::endl;
     }
+    */
     
     class TestCacheObj
     {
@@ -134,6 +120,7 @@ public:
         int k5;
         int k6;
         int k7;
+        //int arr[20];
     };
 
     static void testFileSizes()
@@ -144,9 +131,9 @@ public:
         
         DDIndex<unsigned long, TestCacheObj> ddIndex(2, 0, 1, 2);
         
-        for (int i = 0; i<1000000; i++)
+        for (int i = 0; i<2000000; i++)
         {
-            ddIndex.insertIdx(i, i);
+            ddIndex.insertIdx(0, i);
         }
         
         /*
@@ -155,11 +142,12 @@ public:
         std::cout << "_s2_ " << std::endl;
         */
         
-        
+        /*
         for (int i = 0; i<999999; i++)
         {
             ddIndex.deleteIdx(0);
         }
+        */
         
         //ddIndex.get(, )
         //k7
@@ -581,15 +569,16 @@ public:
         
         std::list<unsigned long> refList;
         
-        for (int i = 0; i<10; i++)
+        for (int i = 0; i<1000000; i++)
         {
-            if (!hasPersistData) ddIndex.insertIdx(0, i);
-            refList.push_front(i);
+            if (!hasPersistData) ddIndex.insertIdx(i, i);
+            refList.push_back(i);
             
             
             //ddIndex.debugMapFunction();
         }
         
+        /*
         //ddIndex.debugMapFunction();
         //ddIndex.debugPrint();
         
@@ -621,7 +610,7 @@ public:
         std::cout << "_s1_ " << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(3));
         std::cout << "_s2_ " << std::endl;
-        
+        */
         
         std::cout << "____DDD____" << std::endl;
         
@@ -641,6 +630,38 @@ public:
         
         std::cout << "____done____" << std::endl;
     }
+    
+    /*
+    static void testTester()
+    {
+        DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
+        ddIndex.unpersist();
+    
+        ddIndex = DDIndex<unsigned long, unsigned long>(1, 0, 1, 2);
+    }
+    */
+    
+    class BenchObj
+    {
+    public:
+        
+        static BenchObj rand() {
+        
+            return BenchObj();
+        }
+    private:
+        int i;
+        //int arr[30];
+    };
+    
+    static void testDDBenchmarks()
+    {
+        system("rm -r data");
+        
+        DDBenchmarks<unsigned long long,BenchObj,1000000>::runBenchmarks();
+    }
+    
+    
     
 };
 

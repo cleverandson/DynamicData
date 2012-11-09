@@ -67,6 +67,20 @@ private:
             }
         }
         
+        DoubleSyncedMMapWrapper(DoubleSyncedMMapWrapper&& other) :
+            _mmapWrapper1(std::forward<MMapWrapperPtr<IdxType, IdxType, MMapHeader>>(other._mmapWrapper1)),
+            _mmapWrapper2(std::forward<MMapWrapperPtr<IdxType, IdxType, MMapHeader>>(other._mmapWrapper2))
+        {}
+        
+        void operator=(DoubleSyncedMMapWrapper&& rhs)
+        {
+            _mmapWrapper1.swap(rhs._mmapWrapper1);
+            _mmapWrapper2.swap(rhs._mmapWrapper2);
+        }
+        
+        DoubleSyncedMMapWrapper(const DoubleSyncedMMapWrapper&) = delete;
+        const DoubleSyncedMMapWrapper& operator=(const DoubleSyncedMMapWrapper&) = delete;
+        
         IdxType get(IdxType idx)
         {
             IdxType retIdx;
@@ -197,18 +211,20 @@ private:
             }
         }
         
+        void unpersist()
+        {
+            _mmapWrapper1->unpersist();
+            _mmapWrapper2->unpersist();
+            
+            _mmapWrapper1.reset();
+            _mmapWrapper2.reset();
+        }
+        
     private:
-        std::unique_ptr<MMapWrapper<IdxType, IdxType, MMapHeader>> _mmapWrapper1;
-        std::unique_ptr<MMapWrapper<IdxType, IdxType, MMapHeader>> _mmapWrapper2;
+        MMapWrapperPtr<IdxType, IdxType, MMapHeader> _mmapWrapper1;
+        MMapWrapperPtr<IdxType, IdxType, MMapHeader> _mmapWrapper2;
         
         unsigned int _activeMapIdx;
-    };
-    
-    //TODO should be removed?
-    class FuncData
-    {
-    public:
-        std::function<IdxType (IdxType inIdx, bool& hasInsValue, YType& insVal, bool& hasDelValue, IdxType& delVal, bool& hasUpdVal, YType& updVal)> closure;
     };
     
     class YValMapHeader { };
@@ -220,19 +236,64 @@ public:
         _yValMMapWrapper(DDMMapAllocator<IdxType>::SHARED()->template getHandleFromDataStore<YType, YValMapHeader>(scopeVal, idVal3)),
         _size(_doubleSyncedMMapWrapper.size()),
         _shoutdownCount(0),
-        _reduceAndSwapThread(&DDIndex::reduceAndSwapMap,this),
-    
-        _activPassivField(DDField<IdxType, YType>(), DDField<IdxType, YType>())
+        _activPassivField(DDField<IdxType, YType>(), DDField<IdxType, YType>()),
+        _reduceAndSwapThread(&DDIndex::reduceAndSwapMap,this)
     {}
+    
+    DDIndex(DDIndex&& other) :
+        _doubleSyncedMMapWrapper(std::forward<DoubleSyncedMMapWrapper>(other._doubleSyncedMMapWrapper)),
+        _yValMMapWrapper(std::forward<MMapWrapperPtr<IdxType, YType, YValMapHeader>>(other._yValMMapWrapper)),
+        _size(other._size),
+        _shoutdownCount(other._shoutdownCount.fetch_add(0)),
+        _activPassivField(std::forward<DDActivePassivePtr<DDField<IdxType, YType>>>(other._activPassivField)),
+        _reduceAndSwapThread(std::thread(&DDIndex::reduceAndSwapMap,this))
+    {}
+    
+    void operator=(DDIndex&& rhs)
+    {
+        finish();
+        
+        _doubleSyncedMMapWrapper = std::forward<DoubleSyncedMMapWrapper>(rhs._doubleSyncedMMapWrapper);
+        _yValMMapWrapper.swap(rhs._yValMMapWrapper);
+        _size = rhs._size;
+        _shoutdownCount = rhs._shoutdownCount.fetch_add(0);
+        
+        //TODO remove this
+        assert(_shoutdownCount == rhs._shoutdownCount);
+        
+        _activPassivField = std::forward<DDActivePassivePtr<DDField<IdxType, YType>>>(rhs._activPassivField);
+        _reduceAndSwapThread = std::thread(&DDIndex::reduceAndSwapMap,this);
+    }
+    
+    //TODO make private.
+    void finish()
+    {
+        if (_reduceAndSwapThread.joinable())
+        {
+            _mutex.lock();
+            _mutex.unlock();
+            
+            _shoutdownCount = 2;
+            
+            _reduceAndSwapThread.join();
+            
+            _shoutdownCount = 0;
+        }
+    }
     
     ~DDIndex()
     {
-        _mutex.lock();
-        _mutex.unlock();
+        finish();
+    }
+    
+    void unpersist()
+    {
+        finish();
         
-        _shoutdownCount = 2;
+        _doubleSyncedMMapWrapper.unpersist();
         
-        _reduceAndSwapThread.join();
+        _yValMMapWrapper->unpersist();
+        _yValMMapWrapper.reset();
     }
     
     DDIndex(const DDIndex&) = delete;
@@ -353,7 +414,7 @@ private:
     DoubleSyncedMMapWrapper _doubleSyncedMMapWrapper;
     
     //YVal Wrapper.
-    std::unique_ptr<MMapWrapper<IdxType, YType, YValMapHeader>> _yValMMapWrapper;
+    MMapWrapperPtr<IdxType, YType, YValMapHeader> _yValMMapWrapper;
     std::mutex _yValMutex;
     
     IdxType _size;
@@ -362,9 +423,10 @@ private:
     
     std::atomic<int> _shoutdownCount;
     
+    DDActivePassivePtr<DDField<IdxType, YType>> _activPassivField;
+    
     std::thread _reduceAndSwapThread;
     
-    DDActivePassivePtr<DDField<IdxType, YType>> _activPassivField;
     
     void reduceAndSwapMap()
     {

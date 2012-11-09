@@ -32,7 +32,7 @@ private:
         mutable IdxType diff;
     };
     
-    class Comperator
+    class Comparator
     {
         public:
 
@@ -42,7 +42,7 @@ private:
         }
     };
     
-    typedef std::set<CompoundElement, Comperator> SetType;
+    typedef std::set<CompoundElement, Comparator> SetType;
     
             
 public:
@@ -52,13 +52,13 @@ public:
     {}
     
     DDDeleteField(DDDeleteField&& other) :
-        _set(std::forward<std::set<CompoundElement, Comperator>>(other._set)),
+        _set(std::forward<std::set<CompoundElement, Comparator>>(other._set)),
         fieldItr(*this)
     {}
             
     void operator=(DDDeleteField<IdxType>&& rhs)
     {
-        _set = std::forward<std::set<CompoundElement, Comperator>>(rhs._set);
+        _set = std::forward<std::set<CompoundElement, Comparator>>(rhs._set);
     }
             
     DDDeleteField(const DDDeleteField&) = delete;
@@ -105,7 +105,7 @@ public:
        
     //
     //iterator interface.
-    typedef typename std::set<CompoundElement, Comperator>::iterator BoundItr;
+    typedef typename std::set<CompoundElement, Comparator>::iterator BoundItr;
     DDFieldIterator<IdxType, DDDeleteField<IdxType>, Dummy> fieldItr;
     //
             

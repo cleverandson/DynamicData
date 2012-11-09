@@ -14,38 +14,41 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sstream>
+#include <thread>
 
 #include "MMapWrapper.h"
 #include "DDUtils.h"
+#include "DDFileHandle.h"
+
+template<typename IdxType, typename Type, class UserDataHeader> using MMapWrapperPtr = std::unique_ptr<MMapWrapper<IdxType, Type, UserDataHeader>>;
 
 template<typename IdxType>
 class DDMMapAllocator
 {
+    typedef std::string FilePath;
+    
 public:
     
     DDMMapAllocator()
     {
         system("mkdir -p data");
-        //system("mkdir -p data");
     }
     
     DDMMapAllocator(const DDMMapAllocator&) = delete;
     const DDMMapAllocator& operator=(const DDMMapAllocator&) = delete;
 
     template<typename Type, class UserDataHeader>
-    std::unique_ptr<MMapWrapper<IdxType, Type, UserDataHeader>> getHandleFromDataStore(size_t scopeVal, size_t idVal)
+    MMapWrapperPtr<IdxType, Type, UserDataHeader> getHandleFromDataStore(size_t scopeVal, size_t idVal)
     {
-        std::tuple<size_t,size_t> tuple = std::make_tuple(scopeVal, idVal);
+        std::pair<size_t,size_t> tuple = std::make_tuple(scopeVal, idVal);
         
-        if(!_persistentIds.count(tuple))
+        if (!_persistentIds.count(tuple))
         {
             _persistentIds[tuple] = true;
-        
-            std::stringstream file;
-            file << "data/data_scope_" << scopeVal << "_id_" << idVal << ".bin";
-        
+            
+            DDFileHandle fileId(scopeVal, idVal, [this, tuple](){ deleteFileId(tuple); });
             //TODO adjust padding size!
-            return std::unique_ptr<MMapWrapper<IdxType, Type, UserDataHeader>>(new MMapWrapper<IdxType, Type, UserDataHeader>(file.str(),/* paddingSize */ 128));
+            return MMapWrapperPtr<IdxType, Type, UserDataHeader>(new MMapWrapper<IdxType, Type, UserDataHeader>(std::move(fileId),/* paddingSize! */ 128));
         }
         else
         {
@@ -60,8 +63,18 @@ public:
     }
     
 private:
-    std::map<std::tuple<size_t,size_t>, bool> _persistentIds;
-    std::map<std::tuple<size_t,size_t>, bool> _indexIds;
+    
+    std::map<std::pair<size_t,size_t>, bool> _persistentIds;
+    
+    void deleteFileId(std::pair<size_t,size_t> fileIdIN)
+    {
+        size_t erased = _persistentIds.erase(fileIdIN);
+        assert(erased);
+        
+        std::string sysMsg("rm -r ");
+        sysMsg.append(DDFileHandle::path(std::get<0>(fileIdIN), std::get<1>(fileIdIN)));
+        system(sysMsg.c_str());
+    }
 };
 
 #endif

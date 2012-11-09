@@ -25,10 +25,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		472E98CB164AAEFC001D0531 /* DDBenchmarks.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDBenchmarks.h; sourceTree = "<group>"; };
 		47363F0C163F090900AE3241 /* DDActivePassivePtr.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDActivePassivePtr.h; sourceTree = "<group>"; };
 		47363F101640301F00AE3241 /* DDInsertField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDInsertField.h; sourceTree = "<group>"; };
 		47363F11164043DC00AE3241 /* DDDeleteField.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDDeleteField.h; sourceTree = "<group>"; };
 		4742E918160CBFEC0045F769 /* Demo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Demo.h; sourceTree = "<group>"; };
+		47478CE7164C43EF009F5869 /* DDFileHandle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDFileHandle.h; sourceTree = "<group>"; };
 		474E40AB15E25286005E4572 /* DDUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDUtils.h; sourceTree = "<group>"; };
 		474E40BF15ED3375005E4572 /* DDIndex.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DDIndex.h; sourceTree = "<group>"; };
 		47564A7015E11B6E0035CFED /* MMapWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = MMapWrapper.h; sourceTree = "<group>"; };
@@ -54,6 +56,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		472E98C8164AAD5B001D0531 /* Benchmark */ = {
+			isa = PBXGroup;
+			children = (
+				472E98CB164AAEFC001D0531 /* DDBenchmarks.h */,
+			);
+			name = Benchmark;
+			sourceTree = "<group>";
+		};
 		47FA6FF015DBBE1700E9715E = {
 			isa = PBXGroup;
 			children = (
@@ -73,6 +83,7 @@
 		47FA6FFE15DBBE1700E9715E /* DynamicData */ = {
 			isa = PBXGroup;
 			children = (
+				472E98C8164AAD5B001D0531 /* Benchmark */,
 				47FA6FFF15DBBE1700E9715E /* main.cpp */,
 				47FA700115DBBE1700E9715E /* DynamicData.1 */,
 				47762DD115DD342000223A73 /* DDMMapAllocator.h */,
@@ -88,6 +99,7 @@
 				47363F11164043DC00AE3241 /* DDDeleteField.h */,
 				47DB8CD916417C0E001C66F5 /* DDField.h */,
 				47B60D981642DED600CAF49A /* DDFieldIterator.h */,
+				47478CE7164C43EF009F5869 /* DDFileHandle.h */,
 			);
 			path = DynamicData;
 			sourceTree = "<group>";

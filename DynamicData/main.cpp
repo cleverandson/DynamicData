@@ -54,11 +54,14 @@ int main(int argc, const char * argv[])
     //Tests::testDDLoopReduce();
     //Tests::testDDSpawn();
     
-    
-    
     //Tests::testDDDeleteField();
     //Tests::testDDInsertField();
     //Tests::testDDField();
+    
+    
+    
+    
+    Tests::testDDBenchmarks();
     
     return 0;
 }

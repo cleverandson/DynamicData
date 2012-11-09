@@ -63,11 +63,9 @@ public:
         _vec(std::forward<std::vector<Element>>(other._vec))
     {}
             
-    DDInsertField<IdxType, CachedElement>& operator=(DDInsertField<IdxType, CachedElement>&& rhs)
+    void operator=(DDInsertField&& rhs)
     {
         _vec = std::forward<std::vector<Element>>(rhs._vec);
-        
-        return *this;
     }
 
     DDInsertField(const DDInsertField&) = delete;

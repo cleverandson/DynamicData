@@ -20,9 +20,19 @@ public:
     DDActivePassivePtr(PtrObj&& activeObj, PtrObj&& passiveObj) :
         _activeObj(std::forward<PtrObj>(activeObj)),
         _passiveObj(std::forward<PtrObj>(passiveObj))
-    {
+    { }
     
+    DDActivePassivePtr(DDActivePassivePtr&& other) :
+        _activeObj(std::forward<PtrObj>(other._activeObj)),
+        _passiveObj(std::forward<PtrObj>(other._passiveObj))
+    { }
+    
+    void operator=(DDActivePassivePtr&& rhs)
+    {
+        _activeObj = std::forward<PtrObj>(rhs._activeObj);
+        _passiveObj = std::forward<PtrObj>(rhs._passiveObj);
     }
+    
     
     DDActivePassivePtr(const DDActivePassivePtr&) = delete;
     const DDActivePassivePtr& operator=(const DDActivePassivePtr&) = delete;
