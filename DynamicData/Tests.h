@@ -19,6 +19,7 @@
 #include "DDDeleteField.h"
 #include "DDField.h"
 #include "DDBenchmarks.h"
+#include "DDRandomGen.h"
 
 class Tests
 {
@@ -567,64 +568,14 @@ public:
         
         DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
         
-        std::list<unsigned long> refList;
+        ddIndex.insertIdx(0, 0);
+        ddIndex.insertIdx(0, 1);
+        ddIndex.insertIdx(1, 2);
         
-        for (int i = 0; i<1000000; i++)
+        
+        for(int i=0; i<ddIndex.size(); i++)
         {
-            if (!hasPersistData) ddIndex.insertIdx(i, i);
-            refList.push_back(i);
-            
-            
-            //ddIndex.debugMapFunction();
-        }
-        
-        /*
-        //ddIndex.debugMapFunction();
-        //ddIndex.debugPrint();
-        
-        if (!hasPersistData) ddIndex.deleteIdx(0);
-        auto itr = refList.begin();
-        std::advance(itr,0);
-        refList.erase(itr);
-        
-        //ddIndex.debugMapFunction();
-        
-        //ddIndex.debugPrint();
-        
-        if (!hasPersistData) ddIndex.deleteIdx(3);
-        itr = refList.begin();
-        std::advance(itr,3);
-        refList.erase(itr);
-        
-        
-        //ddIndex.debugMapFunction();
-        
-        
-        if (!hasPersistData) ddIndex.deleteIdx(3);
-        itr = refList.begin();
-        std::advance(itr,3);
-        refList.erase(itr);
-        
-        //ddIndex.debugMapFunction();
-        
-        std::cout << "_s1_ " << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(3));
-        std::cout << "_s2_ " << std::endl;
-        */
-        
-        std::cout << "____DDD____" << std::endl;
-        
-        int index=0;
-        for(auto iter = refList.begin(); iter != refList.end(); iter++)
-        {
-            unsigned long ddVal = ddIndex.get(index);
-            unsigned long listVal = *iter;
-            
-            //std::cout << "____GET____" << ddVal << " _l_ " << listVal << std::endl;
-            
-            assert(listVal == ddVal);
-            
-            index++;
+           std::cout << "_aa_ " << ddIndex.get(i) << std::endl;
         }
         
         
@@ -645,12 +596,33 @@ public:
     {
     public:
         
-        static BenchObj rand() {
+        static BenchObj rand()
+        {
+            static DDRandomGen<unsigned int> randGen = DDRandomGen<unsigned int>();
         
-            return BenchObj();
+            BenchObj benchObj;
+            //benchObj._id = randGen.randVal();
+            
+            static unsigned int count = 0;
+            count++;
+            
+            benchObj._id = count;
+            
+            return benchObj;
         }
+        
+        unsigned int identifier()
+        {
+            return _id;
+        }
+        
+        bool operator== (const BenchObj& other) const
+        {
+            return _id == other._id;
+        }
+        
     private:
-        int i;
+        unsigned int _id;
         int arr[30];
     };
     
@@ -658,7 +630,7 @@ public:
     {
         system("rm -r data");
         
-        DDBenchmarks<unsigned long long,BenchObj,1000000>::runBenchmarks();
+        DDBenchmarks<unsigned long long,BenchObj,1000>::runBenchmarks();
     }
     
     

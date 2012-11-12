@@ -42,7 +42,7 @@ int main(int argc, const char * argv[])
     //Tests::testWithUpdateDDIndex(false);
     
     
-    //Tests::testTempTest(false);
+    Tests::testTempTest(false);
     //Tests::testTempTest(true);
     
     
@@ -61,7 +61,7 @@ int main(int argc, const char * argv[])
     
     
     
-    Tests::testDDBenchmarks();
+    //Tests::testDDBenchmarks();
     
     return 0;
 }

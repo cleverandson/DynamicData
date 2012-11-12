@@ -13,8 +13,10 @@
 #include <functional>
 #include <chrono>
 #include <iomanip>
+#include <list>
 
 #include "DDIndex.h"
+#include "DDRandomGen.h"
 
 template<typename IdxType, typename StoredType, size_t DDIndexSize>
 class DDBenchmarks
@@ -36,40 +38,17 @@ private:
         clock::time_point _start;
     };
     
-    template<size_t StartRange, size_t EndRange>
-    class RandomGen
-    {
-        static_assert(StartRange >= 0 && StartRange < EndRange, "RandomGen ranges not consistent.");
-        
-    public:
-        RandomGen() : _distribution(StartRange, EndRange) {}
-        
-        IdxType randVal() { return _distribution(RandomGen::engine()); }
-        
-    private:
-        std::uniform_int_distribution<IdxType> _distribution;
-        
-        static std::mt19937& engine()
-        {
-            static std::mt19937 engine;
-            return engine;
-        }
-    };
-    
     class Stats
     {
     public:
         
         void benchmarkRes(std::string benchmarkName, microsec duration, size_t operations)
         {
-            
             std::cout << std::endl;
             std::cout << "-------------" << std::endl;
             std::cout << "Benchmark " << benchmarkName << std::endl;
             std::cout << "OPS/SEC: " << (long long)(1000000.0 / (float)duration.count() * (float)operations)  << std::endl;
             std::cout << "-------------" << std::endl;
-            
-            //std::cout << "-------------" << duration.count() << " ops " << operations << std::endl;
         }
     };
     
@@ -77,13 +56,106 @@ private:
     {
     public:
         
-        DDIndexWrapper() : ddIndex(createDDIndex()) {}
+        DDIndexWrapper(DDIndex<IdxType, StoredType>&& ddIndex) :
+        _ddIndex(std::move(ddIndex))
+        {}
         
-        DDIndexWrapper(const DDIndexWrapper&) = delete;
-        const DDIndexWrapper& operator=(const DDIndexWrapper&) = delete;
+        StoredType get(IdxType idx)
+        {
+            return _ddIndex.get(idx);
+        }
+        
+        void insertIdx(IdxType idx, StoredType yValue)
+        {
+            _ddIndex.insertIdx(idx, yValue);
+        }
+        
+        void deleteIdx(IdxType idx)
+        {
+            _ddIndex.deleteIdx(idx);
+        }
+        
+        IdxType size() { return _ddIndex.size(); }
+        
+        void unpersist()
+        {
+            _ddIndex.unpersist();
+        }
+        
+    protected:
+        DDIndex<IdxType, StoredType> _ddIndex;
+    };
+    
+    class DDIndexWrapperAssert
+    {
+    public:
+        
+        DDIndexWrapperAssert(DDIndex<IdxType, StoredType>&& ddIndex) :
+            _ddIndex(std::move(ddIndex))
+        {}
+        
+        StoredType get(IdxType idx)
+        {
+            return _ddIndex.get(idx);
+        }
+        
+        void insertIdx(IdxType idx, StoredType yValue)
+        {
+            typename std::list<StoredType>::iterator itr = _list.begin();
+            advance(itr, idx);
+            _list.insert(itr, yValue);
+            _ddIndex.insertIdx(idx, yValue);
+        }
+        
+        void deleteIdx(IdxType idx)
+        {
+            _list.erase(idx);
+            _ddIndex.deleteIdx(idx);
+        }
+        
+        IdxType size() { return _ddIndex.size(); }
+        
+        void unpersist()
+        {
+            _ddIndex.unpersist();
+            _list.clear();
+        }
+        
+        void check()
+        {
+            assert(_list.size() == _ddIndex.size());
+        
+            unsigned int temp = 0;
+            IdxType idx = 0;
+            for(auto iter = _list.begin(); iter != _list.end(); iter++)
+            {
+                //std::cout << "_aa " << _ddIndex.get(idx).identifier() << " _a_ " << (*iter).identifier() << std::endl;
+                assert(*iter == _ddIndex.get(idx));
+                
+                temp++;
+                idx++;
+            }
+        }
+        
+    protected:
+        std::list<StoredType> _list;
+        DDIndex<IdxType, StoredType> _ddIndex;
+    };
+    
+    template<class IndexWrapper>
+    class DDIndexHandle : public IndexWrapper
+    {
+    public:
+        
+        DDIndexHandle() : IndexWrapper(createDDIndex()) {}
+        
+        DDIndexHandle(const DDIndexHandle&) = delete;
+        const DDIndexHandle& operator=(const DDIndexHandle&) = delete;
 
         void initDDIndex()
         {
+            _ddIndex(createDDIndex());
+            
             ddIndex(createDDIndex());
         }
         
@@ -94,90 +166,93 @@ private:
         
         void fillDDIndex()
         {
-            assert(ddIndex.size() <= DDIndexSize);
+            assert(IndexWrapper::size() <= DDIndexSize);
             
-            IdxType currSize = ddIndex.size();
+            IdxType currSize = IndexWrapper::size();
             
             for (int i=0; i<DDIndexSize - currSize; i++)
             {
-                ddIndex.insertIdx(i, StoredType::rand());
+                IndexWrapper::insertIdx(i, StoredType::rand());
             }
             
-            assert(ddIndex.size() == DDIndexSize);
+            assert(IndexWrapper::size() == DDIndexSize);
         }
         
         void clearDDIndex()
         {
-            ddIndex.unpersist();
-            ddIndex = createDDIndex();
+            IndexWrapper::unpersist();
+            IndexWrapper::_ddIndex = createDDIndex();
         }
         
-        DDIndex<IdxType, StoredType> ddIndex;
+        //DDIndex<IdxType, StoredType> ddIndex;
     };
     
-    template<size_t NumOfWrites>
+    
+    template<size_t NumOfWrites, class IndexHandle>
     class RandomWriteBenchmark
     {
     public:
         
-        void run(DDIndexWrapper& ddIndexWrapper, Stats& stats)
+        void run(IndexHandle& indexHandle, Stats& stats)
         {
-            ddIndexWrapper.clearDDIndex();
+            indexHandle.clearDDIndex();
             
             Duration duration;
             
             IdxType randInsertIdx;
             IdxType indexSize;
             
-            auto randGen = RandomGen<0, NumOfWrites>();
+            auto randGen = DDRandomGen<IdxType>(0, NumOfWrites);
             
             for (int i=0; i<NumOfWrites; i++)
             {
-                //std::cout << "_ee" << std::endl;
-                
-                indexSize = ddIndexWrapper.ddIndex.size();
+                indexSize = indexHandle.size();
                 if (indexSize > 0) randInsertIdx = randGen.randVal() % indexSize;
                 else randInsertIdx = 0;
             
-                ddIndexWrapper.ddIndex.insertIdx(randInsertIdx, StoredType::rand());
+                std::cout << "_ee" << randInsertIdx << std::endl;
+                
+                indexHandle.insertIdx(randInsertIdx, StoredType::rand());
             }
             
             stats.benchmarkRes("RandomWriteBenchmark", duration.elapsed(), NumOfWrites);
         }
     };
     
-    template<size_t NumOfWrites>
+    template<size_t NumOfWrites, class IndexHandle>
     class SequentialWriteBenchmark
     {
     public:
         
-        void run(DDIndexWrapper& ddIndexWrapper, Stats& stats)
+        void run(IndexHandle& indexHandle, Stats& stats)
         {
-            ddIndexWrapper.clearDDIndex();
+            indexHandle.clearDDIndex();
             
             Duration duration;
             
+            //std::cout << "__cc " << NumOfWrites << std::endl;
+            
             for (int i=0; i<NumOfWrites; i++)
             {
-                ddIndexWrapper.ddIndex.insertIdx(i, StoredType::rand());
+                indexHandle.insertIdx(i, StoredType::rand());
             }
             
             stats.benchmarkRes("SequentialWriteBenchmark", duration.elapsed(), NumOfWrites);
         }
     };
     
-    template<size_t NumOfReads>
+    template<size_t NumOfReads, class IndexHandle>
     class SequentialReadBenchmark
     {
     public:
         
-        void run(DDIndexWrapper& ddIndexWrapper, Stats& stats)
+        void run(IndexHandle& indexHandle, Stats& stats)
         {
-            ddIndexWrapper.fillDDIndex();
+            indexHandle.fillDDIndex();
             
             std::this_thread::sleep_for(std::chrono::seconds(1));
             
-            IdxType idx = RandomGen<0, DDIndexSize>().randVal();
+            IdxType idx = DDRandomGen<IdxType>(0, DDIndexSize).randVal();
             
             Duration duration;
             
@@ -186,29 +261,29 @@ private:
                 if (idx == 0) idx = DDIndexSize - 1;
                 idx--;
                 
-                ddIndexWrapper.ddIndex.get(idx);
+                indexHandle.get(idx);
             }
             
             stats.benchmarkRes("SequentialReadBenchmark", duration.elapsed(), NumOfReads);
         }
     };
     
-    template<size_t NumOfReads, size_t ReadWidth>
+    template<size_t NumOfReads, size_t ReadWidth, class IndexHandle>
     class RandomReadBenchmark
     {
         static_assert(ReadWidth <= DDIndexSize, "RandomReadBenchmark error ReadWidth > DDIndexSize");
         
     public:
         
-        void run(DDIndexWrapper& ddIndexWrapper, Stats& stats)
+        void run(IndexHandle& indexHandle, Stats& stats)
         {
-            ddIndexWrapper.fillDDIndex();
+            indexHandle.fillDDIndex();
             
             std::this_thread::sleep_for(std::chrono::seconds(3));
             
-            IdxType startIdx = RandomGen<0, DDIndexSize>().randVal();
+            IdxType startIdx = DDRandomGen<IdxType>(0, DDIndexSize).randVal();
             
-            auto randGen = RandomGen<0, ReadWidth>();
+            auto randGen = DDRandomGen<IdxType>(0, ReadWidth);
             
             IdxType rndNumb;
             IdxType idx;
@@ -222,23 +297,29 @@ private:
                 if (rndNumb > startIdx) idx = DDIndexSize - (rndNumb - startIdx) - 1;
                 else idx = startIdx - rndNumb;
                 
-                ddIndexWrapper.ddIndex.get(idx);
+                indexHandle.get(idx);
             }
             
             stats.benchmarkRes("RandomReadBenchmark", duration.elapsed(), NumOfReads);
         }
     };
-
-    class Dummy{};
     
-    template<class Dummy>
-    static void runAll(DDIndexWrapper& ddIndexWrapper, Stats& stats) {}
+    template<size_t Idx, class IndexHandle>
+    static void run(size_t index, IndexHandle& indexHandle, Stats& stats) {}
     
-    template<class Dummy, typename Benchmark, typename... Benchmarks>
-    static void runAll(DDIndexWrapper& ddIndexWrapper, Stats& stats)
+    template<size_t Idx, class IndexHandle, typename Benchmark, typename... Benchmarks>
+    static void run(size_t index, IndexHandle& indexHandle, Stats& stats)
     {
-        Benchmark().run(ddIndexWrapper, stats);
-        runAll<Dummy, Benchmarks...>(ddIndexWrapper, stats);
+        if (Idx == index) Benchmark().run(indexHandle, stats);
+        run<Idx+1, IndexHandle, Benchmarks...>(index, indexHandle, stats);
+    }
+    
+    template<class IndexHandle, typename... Benchmarks>
+    static void run(size_t index, IndexHandle& indexHandle, Stats& stats)
+    {
+        index = index % sizeof...(Benchmarks);
+        
+        run<0, IndexHandle, Benchmarks...>(index, indexHandle, stats);
     }
     
 public:
@@ -247,25 +328,100 @@ public:
     DDBenchmarks(const DDBenchmarks&) = delete;
     const DDBenchmarks& operator=(const DDBenchmarks&) = delete;
 
+    //typedef DDIndexHandle<DDIndexWrapperAssert> IndexHandleAssertType;
+    
+    class Dummy {};
+    
+    template<class Dummy, bool Assert>
+    class IndexHandleTrait
+    {
+    public:
+        typedef DDIndexHandle<DDIndexWrapper> type;
+    };
+    
+    template<class Dummy>
+    class IndexHandleTrait<Dummy, true>
+    {
+    public:
+        typedef DDIndexHandle<DDIndexWrapperAssert> type;
+    };
+    
+    
+    template<class IndexHandle, bool Assert>
+    class CheckHandle
+    {
+    public:
+        static void check(IndexHandle& handle) {};
+    };
+    
+    template<class IndexHandle>
+    class CheckHandle<IndexHandle, true>
+    {
+    public:
+        static void check(IndexHandle& handle)
+        {
+            handle.check();
+        }
+    };
+    
     static void runBenchmarks()
     {
-        DDIndexWrapper ddIndexWrapper;
+        typedef DDIndexHandle<DDIndexWrapper> IndexHandleType;
+        
+        static const bool AssertIndexHandle = true;
+        
+        
+        typename IndexHandleTrait<Dummy, AssertIndexHandle>::type ddIndexHandle;
         Stats stats;
         
-        static const size_t RandomReads = 100000;
-        static const size_t SequentialReads = 100000;
-        static const size_t SequentialWrites = 100000;
-        static const size_t RandomWrites = 100000;
         
-        DDBenchmarks::runAll<Dummy,
+        static const size_t RandomReads = 1000;
+        static const size_t SequentialReads = 1000;
+        static const size_t SequentialWrites = 1000;
+        static const size_t RandomWrites = 3;
         
-            RandomReadBenchmark<RandomReads, DDIndexSize>,
-            SequentialReadBenchmark<SequentialReads>,
-            SequentialWriteBenchmark<SequentialWrites>,
-            RandomWriteBenchmark<RandomWrites>
         
-            //... more benchmarks.
-        >(ddIndexWrapper, stats);
+        
+        /*
+        DDBenchmarks::run
+        <
+        typename IndexHandleTrait<Dummy, AssertIndexHandle>::type,
+        
+        RandomReadBenchmark<RandomReads, DDIndexSize, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
+        SequentialReadBenchmark<SequentialReads, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
+        SequentialWriteBenchmark<SequentialWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
+        RandomWriteBenchmark<RandomWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>
+        
+        //... more benchmarks.
+        >(1, ddIndexHandle, stats);
+        
+        CheckHandle<typename IndexHandleTrait<Dummy, AssertIndexHandle>::type, AssertIndexHandle>::check(ddIndexHandle);
+        */
+        
+        
+        
+        for (int i=0; i<10; i++)
+        {
+            DDBenchmarks::run
+            <
+                typename IndexHandleTrait<Dummy, AssertIndexHandle>::type,
+            
+                /*
+                RandomReadBenchmark<RandomReads, DDIndexSize, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
+                SequentialReadBenchmark<SequentialReads, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
+                SequentialWriteBenchmark<SequentialWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
+                */
+            
+                RandomWriteBenchmark<RandomWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>
+
+                //... more benchmarks.
+            >(i, ddIndexHandle, stats);
+        
+            CheckHandle<typename IndexHandleTrait<Dummy, AssertIndexHandle>::type, AssertIndexHandle>::check(ddIndexHandle);
+        }
+        
+        
+        //typedef DDIndexHandle<DDIndexWrapperAssert> IndexHandleType;
     }
 };
 
