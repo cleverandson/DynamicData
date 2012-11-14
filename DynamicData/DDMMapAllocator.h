@@ -48,7 +48,7 @@ public:
             
             DDFileHandle fileId(scopeVal, idVal, [this, tuple](){ deleteFileId(tuple); });
             //TODO adjust padding size!
-            return MMapWrapperPtr<IdxType, Type, UserDataHeader>(new MMapWrapper<IdxType, Type, UserDataHeader>(std::move(fileId),/* paddingSize! */ 128));
+            return MMapWrapperPtr<IdxType, Type, UserDataHeader>(new MMapWrapper<IdxType, Type, UserDataHeader>(std::move(fileId),/* paddingSize! */ 4096));
         }
         else
         {
