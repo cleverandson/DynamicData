@@ -568,16 +568,59 @@ public:
         
         DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
         
-        ddIndex.insertIdx(0, 0);
-        ddIndex.insertIdx(0, 1);
-        ddIndex.insertIdx(1, 2);
+        std::list<unsigned long> refList;
+        
+        
+        if (!hasPersistData)  ddIndex.insertIdx(0,101);
+        refList.push_back(101);
+        
+        
+        if (!hasPersistData) ddIndex.insertIdx(1,102);
+        refList.push_back(102);
+        
+        /*
+        if (!hasPersistData) ddIndex.insertIdx(2,104);
+        refList.push_back(104);
+        */
+        
+        /*
+        std::cout << "_s1_ " << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        std::cout << "_s2_ " << std::endl;
+        */
+        
+        if (!hasPersistData) ddIndex.insertIdx(0,11111);
+        refList.push_front(11111);
+        
+        /*
+        if (!hasPersistData) ddIndex.insertIdx(0,22222);
+        refList.push_front(22222);
+        */
+        
+        /*
+        if (!hasPersistData) ddIndex.deleteIdx(0);
+        refList.pop_front();
+        
+        if (!hasPersistData) ddIndex.deleteIdx(0);
+        refList.pop_front();
+        */
         
         
         for(int i=0; i<ddIndex.size(); i++)
         {
-           std::cout << "_aa_ " << ddIndex.get(i) << std::endl;
+            std::cout << "_res_" << ddIndex.get(i) << std::endl;
         }
         
+        /*
+        int index=0;
+        for(auto iter = refList.begin(); iter != refList.end(); iter++)
+        {
+            unsigned long ddVal = ddIndex.get(index);
+            assert(*iter == ddVal);
+            
+            index++;
+        }
+        */
         
         std::cout << "____done____" << std::endl;
     }
@@ -630,7 +673,7 @@ public:
     {
         system("rm -r data");
         
-        DDBenchmarks<unsigned long long,BenchObj,1000>::runBenchmarks();
+        DDBenchmarks<unsigned long long,BenchObj,1000000>::runBenchmarks();
     }
     
     

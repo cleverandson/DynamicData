@@ -71,36 +71,91 @@ public:
     DDInsertField(const DDInsertField&) = delete;
     const DDInsertField& operator=(const DDInsertField&) = delete;
     
+    
+            
+            
     void addIdx(IdxType idx, const CachedElement& cachedElement)
     {
         auto biggerThanItr = std::upper_bound(_vec.begin(), _vec.end(), Element(idx), Comperator());
-    
-        if (biggerThanItr == _vec.begin())
+        
+        //
+        //shadow case.
+        //
+        if (biggerThanItr != _vec.end() && idx > (biggerThanItr->idx - biggerThanItr->cachedElements.size()))
         {
-            biggerThanItr = _vec.insert(_vec.begin(), Element(idx, cachedElement));
+            //std::cout << "shadow case." << std::endl;
+            
+            auto itr = biggerThanItr->cachedElements.begin();
+            itr += biggerThanItr->idx - idx + 1;
+            
+            //std::cout << "DD__ " << biggerThanItr->idx << " _aa_ " << idx << " __ " << biggerThanItr->idx - idx << " _size_ " << biggerThanItr->cachedElements.size() << std::endl;
+            
+            biggerThanItr->cachedElements.insert(itr, cachedElement);
+            
+            biggerThanItr->idx++;
+            biggerThanItr->diff++;
+            
             biggerThanItr++;
         }
         else
         {
-            auto smallerOrEqual = biggerThanItr;
-            smallerOrEqual--;
-        
-            if (smallerOrEqual->idx != idx)
+            bool caseMached = false;
+            IdxType lastDiff = 0;
+            
+            if (biggerThanItr != _vec.begin())
             {
-                biggerThanItr = _vec.insert(biggerThanItr, Element(idx, smallerOrEqual->diff + 1, cachedElement));
-                biggerThanItr++;
+                auto smallerOrEqual = biggerThanItr;
+                smallerOrEqual--;
+                lastDiff = smallerOrEqual->diff;
+                
+                //
+                //hit case.
+                //
+                if (idx == smallerOrEqual->idx)
+                {
+                    //std::cout << "hit case." << std::endl;
+                    
+                    smallerOrEqual->idx++;
+                    smallerOrEqual->diff++;
+                    
+                    auto itr = smallerOrEqual->cachedElements.begin();
+                    itr++;
+                    
+                    smallerOrEqual->cachedElements.insert(itr, cachedElement);
+                
+                    caseMached = true;
+                }
+                //
+                //+1 case.
+                //
+                else if (idx == smallerOrEqual->idx + 1)
+                {
+                    //std::cout << "+1 case." << std::endl;
+                    
+                    smallerOrEqual->idx++;
+                    smallerOrEqual->diff++;
+                    
+                    smallerOrEqual->cachedElements.insert(smallerOrEqual->cachedElements.begin(), cachedElement);
+                
+                    caseMached = true;
+                }
             }
-            else
+            
+            //
+            //insert case.
+            //
+            if (!caseMached)
             {
-                smallerOrEqual->idx++;
-                smallerOrEqual->diff++;
-                smallerOrEqual->cachedElements.push_back(cachedElement);
+                //std::cout << "insert case." << std::endl;
+                
+                biggerThanItr = _vec.insert(biggerThanItr, Element(idx, lastDiff + 1, cachedElement));
+                biggerThanItr++;
             }
         }
 
         adjustIdxs(biggerThanItr);
     }
-
+            
     IdxType eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
     {
         auto biggerThanItr = std::equal_range(_vec.begin(), _vec.end(), Element(idx), Comperator()).second;

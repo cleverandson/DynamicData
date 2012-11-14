@@ -129,7 +129,6 @@ private:
             IdxType idx = 0;
             for(auto iter = _list.begin(); iter != _list.end(); iter++)
             {
-                //std::cout << "_aa " << _ddIndex.get(idx).identifier() << " _a_ " << (*iter).identifier() << std::endl;
                 assert(*iter == _ddIndex.get(idx));
                 
                 temp++;
@@ -166,6 +165,8 @@ private:
         
         void fillDDIndex()
         {
+            
+            
             assert(IndexWrapper::size() <= DDIndexSize);
             
             IdxType currSize = IndexWrapper::size();
@@ -183,8 +184,6 @@ private:
             IndexWrapper::unpersist();
             IndexWrapper::_ddIndex = createDDIndex();
         }
-        
-        //DDIndex<IdxType, StoredType> ddIndex;
     };
     
     
@@ -209,9 +208,7 @@ private:
                 indexSize = indexHandle.size();
                 if (indexSize > 0) randInsertIdx = randGen.randVal() % indexSize;
                 else randInsertIdx = 0;
-            
-                std::cout << "_ee" << randInsertIdx << std::endl;
-                
+
                 indexHandle.insertIdx(randInsertIdx, StoredType::rand());
             }
             
@@ -229,8 +226,6 @@ private:
             indexHandle.clearDDIndex();
             
             Duration duration;
-            
-            //std::cout << "__cc " << NumOfWrites << std::endl;
             
             for (int i=0; i<NumOfWrites; i++)
             {
@@ -368,17 +363,29 @@ public:
     {
         typedef DDIndexHandle<DDIndexWrapper> IndexHandleType;
         
-        static const bool AssertIndexHandle = true;
-        
+        static const bool AssertIndexHandle = false;
         
         typename IndexHandleTrait<Dummy, AssertIndexHandle>::type ddIndexHandle;
         Stats stats;
         
+        static const size_t RandomReads = 100000;
+        static const size_t SequentialReads = 100000;
+        static const size_t SequentialWrites = 100000;
+        static const size_t RandomWrites = 100000;
         
-        static const size_t RandomReads = 1000;
-        static const size_t SequentialReads = 1000;
-        static const size_t SequentialWrites = 1000;
-        static const size_t RandomWrites = 3;
+        /*
+        //assert config.
+        static const bool AssertIndexHandle = true;
+        
+        typename IndexHandleTrait<Dummy, AssertIndexHandle>::type ddIndexHandle;
+        Stats stats;
+        
+        static const size_t RandomReads = 10000;
+        static const size_t SequentialReads = 10000;
+        static const size_t SequentialWrites = 10000;
+        static const size_t RandomWrites = 10000;
+        */
+        
         
         
         
@@ -406,11 +413,11 @@ public:
             <
                 typename IndexHandleTrait<Dummy, AssertIndexHandle>::type,
             
-                /*
+            /*
                 RandomReadBenchmark<RandomReads, DDIndexSize, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
                 SequentialReadBenchmark<SequentialReads, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
                 SequentialWriteBenchmark<SequentialWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
-                */
+            */    
             
                 RandomWriteBenchmark<RandomWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>
 
