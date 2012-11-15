@@ -23,13 +23,43 @@ private:
     {
     public:
         
-        CompoundElement(IdxType idxIN) :
-        idx(idxIN),
-        diff(1)
+        CompoundElement(IdxType idx) :
+        _idx(idx),
+        _diff(1)
         { }
         
-        IdxType idx;
-        mutable IdxType diff;
+        IdxType idx() const
+        {
+            return _idx;
+        }
+        
+        IdxType diff() const {return _diff; }
+        
+        //TODO hack because func is not const.
+        void adjustDiff(IdxType relValue) const
+        {
+            _diff += relValue;
+        }
+        
+        void setDiff(IdxType value) const
+        {
+            _diff = value;
+        }
+        
+        void decrIdx() const
+        {
+            assert(_idx > 0);
+            _idx--;
+        }
+        
+        void incrIdx() const
+        {
+            _idx++;
+        }
+        
+    private:
+        mutable IdxType _idx;
+        mutable IdxType _diff;
     };
     
     class Comparator
@@ -38,7 +68,7 @@ private:
 
         bool operator() (const CompoundElement& lhs, const CompoundElement& rhs) const
         {
-            return lhs.idx < rhs.idx;
+            return lhs.idx() < rhs.idx();
         }
     };
     
@@ -66,43 +96,86 @@ public:
     
     void addIdx(IdxType idx)
     {
-        auto ret = _set.insert(CompoundElement(idx));
+        /*
+         
+         Resolve The Triangle Case
         
-        //adjust elemts diff count;
-        if (ret.second==false)
+            *       *
+            | \  =  | \
+            1  2    12 x
+         
+        */
+        
+        CompoundElement ce(idx);
+        
+        auto biggerThanItr = std::upper_bound(_set.begin(), _set.end(), ce, Comparator());
+        
+        //resolve triangle case
+        bool nodeModified = false;
+        bool hasRightNode = false;
+        auto smallerEqualItr = biggerThanItr;
+        
+        //look for right triangle node.
+        if (biggerThanItr->idx() > 0 && biggerThanItr->idx() - 1 == idx)
         {
-            ret.first->diff++;
+            ce.setDiff(biggerThanItr->diff() + 1);
+            _set.erase(biggerThanItr++);
+            hasRightNode = true;
+        
+            smallerEqualItr = biggerThanItr;
         }
-        else if (ret.second==true && ret.first != _set.begin())
+        
+        //look for hit triangle node.
+        if (biggerThanItr != _set.begin())
         {
-            auto lastElItr = ret.first;
-            lastElItr--;
-            ret.first->diff += lastElItr->diff;
-        }
-        
-        //
-        // check corner case: if the deletion point is above another deletion point.
-        //
-        auto tempItr = ret.first;
-        
-        ret.first++;
-        
-        if (ret.first != _set.end())
-        {
-            if (tempItr->idx == ret.first->idx - 1)
+            smallerEqualItr--;
+            
+            if (smallerEqualItr->idx() == idx)
             {
-                tempItr->diff += ret.first->diff;
-                _set.erase(ret.first);
-                tempItr++;
-                ret.first = tempItr;
+                if (hasRightNode) smallerEqualItr->setDiff(ce.diff());
+                else smallerEqualItr->adjustDiff(1);
+                
+                nodeModified = true;
             }
         }
-        //
-        //
         
-        adjustDiffs(ret.first);
+    
+        if (!nodeModified)
+        {
+            if (!hasRightNode)
+            {
+                IdxType lastDiff = 0;
+                if (biggerThanItr != _set.begin()) lastDiff = smallerEqualItr->diff();
+                    
+                ce.setDiff(lastDiff + 1);
+            }
+            
+            //insert the element. The iterator is only here to improve performance.
+            biggerThanItr = _set.insert(biggerThanItr, ce);
+            biggerThanItr++;
+        }
+        
+        adjustIdxs(biggerThanItr);
     }
-       
+    
+    IdxType adjustFieldAndEval(IdxType insertIdx)
+    {
+        auto biggerThanItr = std::upper_bound(_set.begin(), _set.end(), CompoundElement(insertIdx), Comparator());
+        auto smallerEqualItr = biggerThanItr;
+        
+        if (biggerThanItr != _set.begin()) smallerEqualItr--;
+        
+        insertIdx = eval(insertIdx, smallerEqualItr);
+        
+        while (biggerThanItr != _set.end())
+        {
+            biggerThanItr->incrIdx();
+            biggerThanItr++;
+        }
+        
+        return insertIdx;
+    }
+    
     //
     //iterator interface.
     typedef typename std::set<CompoundElement, Comparator>::iterator BoundItr;
@@ -118,7 +191,7 @@ public:
             if (itr != _set.begin())
             {
                 itr--;
-                idx += itr->diff;
+                idx += itr->diff();
             }
         }
         
@@ -137,28 +210,40 @@ public:
         
         for (auto itr = _set.begin(); itr != _set.end(); itr++)
         {
-            for (IdxType i=0; i<(itr->diff - lastDiff); i++)
+            for (IdxType i=0; i<(itr->diff() - lastDiff); i++)
             {
-                vec.push_back(itr->idx + i + lastDiff);
+                vec.push_back(itr->idx() + i + lastDiff);
             }
             
-            lastDiff = itr->diff;
+            lastDiff = itr->diff();
         }
         
         return vec;
     }
 
+    /*
+    void debugPrint()
+    {
+        for (typename SetType::iterator itr = _set.begin(); itr != _set.end(); itr++)
+        {
+            std::cout << "_i_ " << itr->idx() << "_d_ " << itr->diff() << std::endl;
+        }
+    }
+    */
+    
 private:
     SetType _set;
     
-    void adjustDiffs(typename SetType::iterator& itrIN)
+    void adjustIdxs(typename std::set<CompoundElement>::iterator& itr)
     {
-        for (typename SetType::iterator itr = itrIN; itr != _set.end(); itr++)
+        while (itr != _set.end())
         {
-            itr->diff++;
+            itr->decrIdx();
+            itr->adjustDiff(1);
+            itr++;
         }
     }
-      
+    
     //
     //iterator interface.
     friend class DDFieldIterator<IdxType, DDDeleteField<IdxType>, Dummy>;
@@ -170,9 +255,9 @@ private:
     
     IdxType eval(IdxType idx, typename SetType::iterator& itr)
     {
-        while (itr != _set.end() && itr->idx <= idx) itr++;
+        while (itr != _set.end() && itr->idx() <= idx) itr++;
         
-        assert(itr == _set.end() || itr->idx > idx);
+        assert(itr == _set.end() || itr->idx() > idx);
         
         auto tempItr = itr;
         
@@ -180,7 +265,7 @@ private:
         if (tempItr != _set.begin())
         {
             tempItr--;
-            idx += tempItr->diff;
+            idx += tempItr->diff();
         }
     
         return idx;

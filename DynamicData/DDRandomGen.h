@@ -9,6 +9,8 @@
 #ifndef DynamicData_DDRandomGen_h
 #define DynamicData_DDRandomGen_h
 
+#include <random>
+
 template<typename ValueType>
 class DDRandomGen
 {
@@ -25,7 +27,8 @@ private:
     
     static std::mt19937& engine()
     {
-        static std::mt19937 engine;
+        std::random_device rd;
+        static std::mt19937 engine(rd());
         return engine;
     }
 };

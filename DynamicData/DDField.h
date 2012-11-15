@@ -39,9 +39,9 @@ public:
 
     void insertIdx(IdxType idx, const CachedElement& cachedElement)
     {
-        idx++;
+        idx = _deleteField.adjustFieldAndEval(idx);
         
-        idx = _deleteField.eval(idx);
+        idx++;
         _insertField.addIdx(idx, cachedElement);
         
         _fieldSize++;
