@@ -43,7 +43,7 @@ public:
         //create a new file.
         if (rawFileSize == 0)
         {
-            remap(2);
+            relResizeFile(2);
             writeMapSizeToFile();
             
             assert(_userDataHeaderPtr);
@@ -115,14 +115,8 @@ public:
     //TODO new test this. replacement for shrinkSize.
     void resize(IdxType size)
     {
-        unmap();
-        
         _mapSize = size;
-        _fileSize = size + _paddingSize;
-        
-        ftruncate(_fileDesc, _fileSize * sizeof(Type) + _headerSize);
-        
-        map();
+        remapIfNeeded2();
     }
     
     IdxType size()
@@ -206,20 +200,28 @@ private:
     {
         IdxType diff = _fileSize - _mapSize;
         
-        if (diff < _paddingSize) remap(1);
-        else if (diff > _triplePaddingSize)
-        {
-            int delta = (int)((diff / _paddingSize) - 2);
-            remap(-delta);
-        }
+        if (diff < _paddingSize) relResizeFile(2);
+        else if (diff > _triplePaddingSize) resizeFile(_mapSize);
+         
     }
     
-    void remap(int delta)
+    //TODO rename.
+    void relResizeFile(int delta)
     {
         unmap();
         if (delta > 0) _fileSize += (delta * _paddingSize);
         else _fileSize -= (-delta * _paddingSize);
         
+        ftruncate(_fileDesc, _fileSize * sizeof(Type) + _headerSize);
+        
+        map();
+    }
+    
+    void resizeFile(IdxType size)
+    {
+        unmap();
+        
+        _fileSize = size + 2 * _paddingSize;
         ftruncate(_fileDesc, _fileSize * sizeof(Type) + _headerSize);
         
         map();
