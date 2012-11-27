@@ -38,20 +38,6 @@ private:
         clock::time_point _start;
     };
     
-    class Stats
-    {
-    public:
-        
-        void benchmarkRes(std::string benchmarkName, microsec duration, size_t operations)
-        {
-            std::cout << std::endl;
-            std::cout << "-------------" << std::endl;
-            std::cout << "Benchmark " << benchmarkName << std::endl;
-            std::cout << "OPS/SEC: " << (long long)(1000000.0 / (float)duration.count() * (float)operations)  << std::endl;
-            std::cout << "-------------" << std::endl;
-        }
-    };
-    
     class DDIndexWrapper
     {
     public:
@@ -109,7 +95,9 @@ private:
         
         void deleteIdx(IdxType idx)
         {
-            _list.erase(idx);
+            typename std::list<StoredType>::iterator itr = _list.begin();
+            advance(itr, idx);
+            _list.erase(itr);
             _ddIndex.deleteIdx(idx);
         }
         
@@ -186,6 +174,63 @@ private:
         }
     };
     
+public:
+    
+    DDBenchmarks() {}
+    
+    DDBenchmarks(const DDBenchmarks&) = delete;
+    const DDBenchmarks& operator=(const DDBenchmarks&) = delete;
+
+    class Stats
+    {
+    public:
+        
+        void benchmarkRes(std::string benchmarkName, microsec duration, size_t operations)
+        {
+            std::cout << std::endl;
+            std::cout << "-------------" << std::endl;
+            std::cout << "Benchmark " << benchmarkName << std::endl;
+            std::cout << "OPS/SEC: " << (long long)(1000000.0 / (float)duration.count() * (float)operations)  << std::endl;
+            std::cout << "-------------" << std::endl;
+        }
+    };
+    
+    template<size_t NumOfWriteDeletes, class IndexHandle>
+    class RandomWriteDeleteBenchmark
+    {
+    public:
+        
+        void run(IndexHandle& indexHandle, Stats& stats)
+        {
+            indexHandle.fillDDIndex();
+            
+            Duration duration;
+            
+            IdxType randDelIdx;
+            IdxType randInsertIdx;
+            IdxType indexSize;
+            
+            auto randGen = DDRandomGen<IdxType>(0, indexHandle.size());
+            
+            for (int i=0; i<NumOfWriteDeletes*2; i++)
+            {
+                indexSize = indexHandle.size();
+                randDelIdx = randGen.randVal() % indexSize;
+                
+                indexHandle.deleteIdx(randDelIdx);
+            }
+            
+            for (int i=0; i<NumOfWriteDeletes; i++)
+            {
+                indexSize = indexHandle.size();
+                randInsertIdx = randGen.randVal() % indexSize;
+                
+                indexHandle.insertIdx(randDelIdx, StoredType::rand());
+            }
+            
+            stats.benchmarkRes("RandomWriteDeleteBenchmark", duration.elapsed(), 2*NumOfWriteDeletes);
+        }
+    };
     
     template<size_t NumOfWrites, class IndexHandle>
     class RandomWriteBenchmark
@@ -206,6 +251,7 @@ private:
             for (int i=0; i<NumOfWrites; i++)
             {
                 indexSize = indexHandle.size();
+                //TODO check this!
                 if (indexSize > 0) randInsertIdx = randGen.randVal() % indexSize;
                 else randInsertIdx = 0;
 
@@ -317,16 +363,6 @@ private:
         run<0, IndexHandle, Benchmarks...>(index, indexHandle, stats);
     }
     
-public:
-    DDBenchmarks() {}
-    
-    DDBenchmarks(const DDBenchmarks&) = delete;
-    const DDBenchmarks& operator=(const DDBenchmarks&) = delete;
-
-    //typedef DDIndexHandle<DDIndexWrapperAssert> IndexHandleAssertType;
-    
-    class Dummy {};
-    
     template<class Dummy, bool Assert>
     class IndexHandleTrait
     {
@@ -358,78 +394,84 @@ public:
             handle.check();
         }
     };
+};
+
+/*
+ RunnerConfig
+ 
+ RunnerConfig::IdxType
+ IdxType RunnerConfig::IndexSize
+
+ bool RunnerConfig::Assert
+ 
+ size_t RunnerConfig::RandomReads
+ size_t RunnerConfig::RandomReadWidth
+ 
+ size_t RunnerConfig::SequentialReads
+ size_t RunnerConfig::SequentialWrites
+ size_t RunnerConfig::RandomWrites
+ size_t RunnerConfig::RandomDeleteWrites
+ 
+ IndexObj RunnerConfig::IndexObj
+*/
+
+/*
+ IndexObj
+ static IndexObj rand();
+*/
+
+class DDBenchmarkRunner
+{
+public:
+    class Dummy {};
     
+    template<typename RunnerConfig>
     static void runBenchmarks()
     {
-        typedef DDIndexHandle<DDIndexWrapper> IndexHandleType;
+        typedef DDBenchmarks<typename RunnerConfig::IdxType,typename RunnerConfig::IndexObj, RunnerConfig::IndexSize> BenchmarkType;
         
-        /*
-        static const bool AssertIndexHandle = false;
+        //BenchmarkType benchmarks;
         
-        typename IndexHandleTrait<Dummy, AssertIndexHandle>::type ddIndexHandle;
-        Stats stats;
+        typedef typename BenchmarkType::template IndexHandleTrait<Dummy, RunnerConfig::Assert>::type IndexHandleType;
+    
         
-        static const size_t RandomReads = 100000;
-        static const size_t SequentialReads = 100000;
-        static const size_t SequentialWrites = 100000;
-        static const size_t RandomWrites = 100000;
-        */
-     
-        //assert config.
-        static const bool AssertIndexHandle = true;
+        IndexHandleType ddIndexHandle;
+        typename BenchmarkType::Stats stats;
         
-        typename IndexHandleTrait<Dummy, AssertIndexHandle>::type ddIndexHandle;
-        Stats stats;
-        
-        static const size_t RandomReads = 10000;
-        static const size_t SequentialReads = 10000;
-        static const size_t SequentialWrites = 10000;
-        static const size_t RandomWrites = 10000;
+        //
+        //Benchmark types.
+        typedef typename BenchmarkType::template SequentialReadBenchmark<RunnerConfig::SequentialReads, IndexHandleType> SequentialReadBMType;
         
         
+        typedef typename BenchmarkType::template RandomReadBenchmark<RunnerConfig::RandomReads, RunnerConfig::RandomReadWidth, IndexHandleType> RandomReadBMType;
         
         
+        typedef typename BenchmarkType::template SequentialWriteBenchmark<RunnerConfig::SequentialWrites, IndexHandleType> SequentialWriteBMType;
+        typedef typename BenchmarkType::template RandomWriteBenchmark<RunnerConfig::RandomWrites, IndexHandleType> RandomWriteBMType;
+        typedef typename BenchmarkType::template RandomWriteDeleteBenchmark<RunnerConfig::RandomDeleteWrites, IndexHandleType> RandomWriteDeleteBMType;
+        //
+        //
         
-        /*
-        DDBenchmarks::run
-        <
-        typename IndexHandleTrait<Dummy, AssertIndexHandle>::type,
-        
-        RandomReadBenchmark<RandomReads, DDIndexSize, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
-        SequentialReadBenchmark<SequentialReads, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
-        SequentialWriteBenchmark<SequentialWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
-        RandomWriteBenchmark<RandomWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>
-        
-        //... more benchmarks.
-        >(1, ddIndexHandle, stats);
-        
-        CheckHandle<typename IndexHandleTrait<Dummy, AssertIndexHandle>::type, AssertIndexHandle>::check(ddIndexHandle);
-        */
-        
-        
+        //Type for checking the index if requested.
+        typedef typename BenchmarkType::template CheckHandle<IndexHandleType, RunnerConfig::Assert> CheckHandleType;
         
         for (int i=0; i<10; i++)
         {
-            DDBenchmarks::run
+            BenchmarkType::template run
             <
-                typename IndexHandleTrait<Dummy, AssertIndexHandle>::type,
+            IndexHandleType,
             
+            SequentialReadBMType,
+            RandomReadBMType,
+            SequentialWriteBMType,
+            RandomWriteBMType,
+            RandomWriteDeleteBMType
             
-                RandomReadBenchmark<RandomReads, DDIndexSize, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
-                SequentialReadBenchmark<SequentialReads, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
-                SequentialWriteBenchmark<SequentialWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
-                
-            
-                RandomWriteBenchmark<RandomWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>
-
-                //... more benchmarks.
+            //... more benchmarks.
             >(i, ddIndexHandle, stats);
-        
-            CheckHandle<typename IndexHandleTrait<Dummy, AssertIndexHandle>::type, AssertIndexHandle>::check(ddIndexHandle);
+            
+            CheckHandleType::check(ddIndexHandle);
         }
-        
-        
-        //typedef DDIndexHandle<DDIndexWrapperAssert> IndexHandleType;
     }
 };
 

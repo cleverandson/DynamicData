@@ -18,7 +18,7 @@ public:
     
     DDRandomGen() : _distribution(0, std::numeric_limits<ValueType>::max()) {}
     
-    DDRandomGen(size_t startRange, size_t endRange) : _distribution(startRange, endRange) {}
+    DDRandomGen(ValueType startRange, ValueType endRange) : _distribution(startRange, endRange) {}
     
     ValueType randVal() { return _distribution(DDRandomGen::engine()); }
     

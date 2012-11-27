@@ -61,7 +61,10 @@ int main(int argc, const char * argv[])
     
     
     
-    Tests::testDDBenchmarks();
+    //Tests::testDDBenchmarks();
+    
+    Tests::testAssertConfig();
+    
     
     return 0;
 }
