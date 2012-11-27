@@ -9,6 +9,7 @@
 #ifndef DynamicData_Tests_h
 #define DynamicData_Tests_h
 
+#include <set>
 #include "MMapWrapper.h"
 #include "DDIndex.h"
 #include "DDLoopReduce.h"
@@ -20,6 +21,7 @@
 #include "DDField.h"
 #include "DDBenchmarks.h"
 #include "DDRandomGen.h"
+#include "DDBaseSet.h"
 
 class Tests
 {
@@ -143,12 +145,12 @@ public:
         std::cout << "_s2_ " << std::endl;
         */
         
-        /*
-        for (int i = 0; i<999999; i++)
+        
+        for (int i = 0; i<1999999; i++)
         {
             ddIndex.deleteIdx(0);
         }
-        */
+        
         
         //ddIndex.get(, )
         //k7
@@ -562,6 +564,18 @@ public:
     }
     */
     
+    
+    /*
+     __aa 5
+     __aa 1
+     __aa 4
+     __aa 6
+     __aa 0
+     __aa 1
+     __aa 1
+     __aa 0
+    */
+    
     static void testTempTest(bool hasPersistData)
     {
         if (!hasPersistData) system("rm -r data");
@@ -571,56 +585,66 @@ public:
         std::list<unsigned long> refList;
         
         
-        if (!hasPersistData)  ddIndex.insertIdx(0,101);
-        refList.push_back(101);
-        
-        
-        if (!hasPersistData) ddIndex.insertIdx(1,102);
-        refList.push_back(102);
-        
-        /*
-        if (!hasPersistData) ddIndex.insertIdx(2,104);
-        refList.push_back(104);
-        */
-        
-        /*
-        std::cout << "_s1_ " << std::endl;
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-        std::cout << "_s2_ " << std::endl;
-        */
-        
-        if (!hasPersistData) ddIndex.insertIdx(0,11111);
-        refList.push_front(11111);
-        
-        /*
-        if (!hasPersistData) ddIndex.insertIdx(0,22222);
-        refList.push_front(22222);
-        */
-        
-        /*
-        if (!hasPersistData) ddIndex.deleteIdx(0);
-        refList.pop_front();
-        
-        if (!hasPersistData) ddIndex.deleteIdx(0);
-        refList.pop_front();
-        */
-        
-        
-        for(int i=0; i<ddIndex.size(); i++)
+        for (int i=0; i<10; i++)
         {
-            std::cout << "_res_" << ddIndex.get(i) << std::endl;
+            ddIndex.insertIdx(i,i);
+            refList.push_back(i);
         }
         
-        /*
         int index=0;
         for(auto iter = refList.begin(); iter != refList.end(); iter++)
         {
-            unsigned long ddVal = ddIndex.get(index);
-            assert(*iter == ddVal);
+            std::cout << "_11res_" << ddIndex.get(index) << " __ " << *iter << std::endl;
             
             index++;
         }
-        */
+        
+        auto del = [&ddIndex, &refList](unsigned long idx)
+        {
+            ddIndex.deleteIdx(idx);
+            auto itr = refList.begin();
+            advance(itr, idx);
+            refList.erase(itr);
+        };
+        
+        del(5);
+
+        del(1);
+        //del(4);
+
+
+        del(6);
+        del(0);
+
+        del(1);
+
+        //ddIndex.debugPrint();
+        //std::cout << "__VV " << std::endl;
+        del(1);
+        
+        //ddIndex.debugPrint();
+
+        //del(0);
+    
+        
+        
+        
+        //del(5);
+        //del(1);
+        //del(4);
+        
+        //del(0);
+        
+        
+        index=0;
+        for(auto iter = refList.begin(); iter != refList.end(); iter++)
+        {
+            std::cout << "_res_" << ddIndex.get(index) << " __ " << *iter << std::endl;
+            if (ddIndex.get(index) != *iter) std::cout << "ff" << std::endl;
+            
+            index++;
+        }
+        
         
         std::cout << "____done____" << std::endl;
     }
@@ -644,12 +668,14 @@ public:
             static DDRandomGen<unsigned int> randGen = DDRandomGen<unsigned int>();
         
             BenchObj benchObj;
-            //benchObj._id = randGen.randVal();
+            benchObj._id = randGen.randVal();
             
+            /*
             static unsigned int count = 0;
             count++;
             
             benchObj._id = count;
+            */
             
             return benchObj;
         }
@@ -673,10 +699,213 @@ public:
     {
         system("rm -r data");
         
-        DDBenchmarks<unsigned long long,BenchObj,1000000>::runBenchmarks();
+        DDBenchmarks<unsigned long long,BenchObj,100000>::runBenchmarks();
     }
     
     
+    
+    template<typename IdxType>
+    class BaseElement
+    {
+    public:
+        
+        BaseElement() : _base(0) {}
+        
+        BaseElement(const BaseElement& baseElement) :
+            _base(baseElement._base)
+        {}
+
+        void adjust() const
+        {
+            _base++;
+        }
+        
+        IdxType base() const
+        {
+            return _base;
+        }
+
+    private:
+        mutable IdxType _base;
+    };
+    
+    template<typename IdxType>
+    class Element
+    {
+    public:
+        
+        Element() = default;
+        
+        Element(Element& other) = delete;
+        
+        Element(const Element&& other) : _relIdx(other._relIdx)
+        {}
+        
+        void adjust() const
+        {
+            _relIdx++;
+        }
+
+        IdxType idxImp(const BaseElement<IdxType>& baseElement) const
+        {
+            //std::cout << "__caa " << baseElement.base() << std::endl;
+            return _relIdx + baseElement.base();
+        }
+        
+        void decompose(IdxType idx, const BaseElement<IdxType>& baseElement) const
+        {
+            _relIdx = idx - baseElement.base();
+        }
+        
+    private:
+        mutable IdxType _relIdx;
+    };
+    
+    
+    template<typename IdxType>
+    class DBugElement
+    {
+    public:
+        
+        class Comperator
+        {
+        public:
+            bool operator() (const DBugElement& lhs, const DBugElement& rhs) const { return lhs.idx() < rhs.idx(); }
+        };
+        
+        DBugElement() : _idx(0) {}
+        
+        DBugElement(IdxType idx) : _idx(idx) {}
+        
+        void adjust() const { _idx++; }
+        
+        IdxType idx() const { return _idx; }
+        
+    private:
+        mutable IdxType _idx;
+    };
+    
+    template<typename IdxType>
+    class DBugSet
+    {
+    private:
+        typedef typename DBugElement<IdxType>::Comperator Comp;
+        
+    public:
+        typedef std::set<DBugElement<IdxType>, Comp> SetType;
+        typedef typename SetType::iterator SetTypeItr;
+        
+        bool insert(IdxType idx)
+        {
+            bool check = false;
+            
+            if (_refSet.count(idx) == 0)
+            {
+                auto res = _refSet.insert(DBugElement<IdxType>(idx));
+                
+                assert(res.second);
+                
+                res.first++;
+                adjust(res.first);
+            
+                check = true;
+            }
+            
+            return check;
+        }
+        
+        SetTypeItr begin() { return _refSet.begin(); }
+        SetTypeItr end() { return _refSet.end(); }
+        
+        size_t size() { return _refSet.size(); }
+        
+    private:
+        SetType _refSet;
+    
+        void adjust(SetTypeItr itr)
+        {
+            while (itr != _refSet.end())
+            {
+                itr->adjust();
+                itr++;
+            }
+        }
+    };
+    
+    
+    
+    static void testDDBaseSet()
+    {
+        typedef unsigned int IdxType;
+        
+        
+        DBugSet<IdxType> dBugSet;
+        
+        DDBaseSet<IdxType, Element<IdxType>, BaseElement<IdxType>, 49> ddBaseSet;
+        
+        /*
+        auto printDDBaseSet = [&ddBaseSet]()
+        {
+            auto currBaseSetPtr = ddBaseSet.baseBegin();
+            bool diplayBase = false;
+            if (currBaseSetPtr != ddBaseSet.baseEnd())
+            {
+                diplayBase = true;
+            }
+            
+            std::cout << "leaf " << std::endl;
+            for (auto itr = ddBaseSet.begin(); itr != ddBaseSet.end(); itr++)
+            {
+                if (diplayBase || itr->baseSetPtr != currBaseSetPtr)
+                {
+                    std::cout << " base " << itr->baseSetPtr->base() << std::endl;
+                    currBaseSetPtr = itr->baseSetPtr;
+                }
+                
+                std::cout << " idx " << itr->idx() << std::endl;
+            
+                diplayBase = false;
+            }
+        
+        };
+        */
+        auto checkSets = [&]()
+        {
+            auto itrDBug = dBugSet.begin();
+            
+            for (auto itr = ddBaseSet.begin(); itr != ddBaseSet.end(); itr++)
+            {
+                //std::cout << "__idx " << itr->idx() << "__dbg " << itrDBug->idx() << std::endl;
+
+                assert(itr->idx() == itrDBug->idx());
+                itrDBug++;
+            }
+        
+        };
+        
+        IdxType setSize = 7001;
+        IdxType stepSize = 7;
+        IdxType idx;
+        bool check;
+        
+        for (IdxType i=0; i<setSize*20; i++)
+        {
+            idx = (i*stepSize) % setSize;
+            check = dBugSet.insert(idx);
+        
+            if (check)
+            {
+                auto itr = ddBaseSet.upperBound(idx);
+                ddBaseSet.insert(itr, idx, Element<IdxType>());
+            }
+        }
+        
+        assert(ddBaseSet.size() == dBugSet.size());
+       
+        checkSets();
+        
+        std::cout << "_done_" << std::endl;
+    }
     
 };
 
