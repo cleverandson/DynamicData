@@ -19,13 +19,16 @@ class DDField
 {
 public:
     
-    DDField() {}
+    DDField() : _fieldSize(0) {}
     
     DDField(DDField<IdxType, CachedElement>&& other) :
         _insertField(std::forward<DDInsertField<IdxType, CachedElement>>(other._insertField)),
         _deleteField(std::forward<DDDeleteField<IdxType>>(other._deleteField)),
-        _fieldSize(0)
+        _fieldSize(other._fieldSize)
     {}
+    
+    //TODO implement.
+    //DDField& operator=(DDField &&) = default;
     
     void operator=(DDField<IdxType, CachedElement>&& rhs)
     {
@@ -56,8 +59,13 @@ public:
     
     IdxType eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        idx = _deleteField.eval(idx);
-        return _insertField.eval(idx, hasCacheElement, cachedElement);
+        if (_fieldSize > 0)
+        {
+            idx = _deleteField.eval(idx);
+            idx = _insertField.eval(idx, hasCacheElement, cachedElement);
+        }
+    
+        return idx;
     }
     
     void startItr()
@@ -85,6 +93,7 @@ public:
     {
         _insertField.clear();
         _deleteField.clear();
+        _fieldSize = 0;
     }
     
     size_t size()

@@ -10,6 +10,9 @@
 #define DynamicData_DDInsertField_h
 
 #include <vector>
+#include <deque>
+#include <set>
+
 #include "DDFieldIterator.h"
 
 template<typename IdxType, class CachedElement>
@@ -37,9 +40,9 @@ private:
         cachedElements(1, cachedElement)
         {}
         
-        IdxType idx;
-        IdxType diff;
-        std::vector<CachedElement> cachedElements;
+        mutable IdxType idx;
+        mutable IdxType diff;
+        mutable std::deque<CachedElement> cachedElements;
     };
     
     class Comperator
@@ -52,6 +55,10 @@ private:
         }
     };
             
+    //typedef std::vector<Element> InsertContainer;
+    typedef std::set<Element, Comperator> InsertContainer;
+    //typedef std::deque<Element> InsertContainer;
+            
 public:
     
     DDInsertField() :
@@ -60,12 +67,12 @@ public:
             
     DDInsertField(DDInsertField&& other) :
         fieldItr(*this),
-        _vec(std::forward<std::vector<Element>>(other._vec))
+        _insertContainer(std::forward<InsertContainer>(other._insertContainer))
     {}
             
     void operator=(DDInsertField&& rhs)
     {
-        _vec = std::forward<std::vector<Element>>(rhs._vec);
+        _insertContainer = std::forward<InsertContainer>(rhs._insertContainer);
     }
 
     DDInsertField(const DDInsertField&) = delete;
@@ -76,12 +83,13 @@ public:
             
     void addIdx(IdxType idx, const CachedElement& cachedElement)
     {
-        auto biggerThanItr = std::upper_bound(_vec.begin(), _vec.end(), Element(idx), Comperator());
+        auto biggerThanItr = _insertContainer.upper_bound(Element(idx));
+        //auto biggerThanItr = std::upper_bound(_insertContainer.begin(), _insertContainer.end(), Element(idx), Comperator());
         
         //
         //shadow case.
         //
-        if (biggerThanItr != _vec.end() && idx > (biggerThanItr->idx - biggerThanItr->cachedElements.size()))
+        if (biggerThanItr != _insertContainer.end() && idx > (biggerThanItr->idx - biggerThanItr->cachedElements.size()))
         {
             //std::cout << "shadow case." << std::endl;
             
@@ -102,7 +110,7 @@ public:
             bool caseMached = false;
             IdxType lastDiff = 0;
             
-            if (biggerThanItr != _vec.begin())
+            if (biggerThanItr != _insertContainer.begin())
             {
                 auto smallerOrEqual = biggerThanItr;
                 smallerOrEqual--;
@@ -148,7 +156,7 @@ public:
             {
                 //std::cout << "insert case." << std::endl;
                 
-                biggerThanItr = _vec.insert(biggerThanItr, Element(idx, lastDiff + 1, cachedElement));
+                biggerThanItr = _insertContainer.insert(biggerThanItr, Element(idx, lastDiff + 1, cachedElement));
                 biggerThanItr++;
             }
         }
@@ -158,14 +166,15 @@ public:
             
     IdxType eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        auto biggerThanItr = std::equal_range(_vec.begin(), _vec.end(), Element(idx), Comperator()).second;
+        auto biggerThanItr = _insertContainer.equal_range(Element(idx)).second;
+        //auto biggerThanItr = std::equal_range(_insertContainer.begin(), _insertContainer.end(), Element(idx), Comperator()).second;
 
         return evalImpl(idx, biggerThanItr, hasCacheElement, cachedElement);
     }
             
     void debugPrint()
     {
-        for (typename std::vector<Element>::iterator itr = _vec.begin(); itr != _vec.end(); itr++)
+        for (typename std::vector<Element>::iterator itr = _insertContainer.begin(); itr != _insertContainer.end(); itr++)
         {
             std::cout << "_i_ " << itr->idx << "_d_ " << itr->diff << std::endl;
         }
@@ -173,21 +182,21 @@ public:
 
     //
     //iterator interface.
-    typedef typename std::vector<Element>::iterator BoundItr;
+    typedef typename InsertContainer::iterator BoundItr;
     DDFieldIterator<IdxType, DDInsertField<IdxType, CachedElement>, CachedElement> fieldItr;
     //
     
     void clear()
     {
-        _vec.clear();
+        _insertContainer.clear();
     }
 
 private:
-    std::vector<Element> _vec;
+    InsertContainer _insertContainer;
 
-    void adjustIdxs(typename std::vector<Element>::iterator& itr)
+    void adjustIdxs(typename InsertContainer::iterator& itr)
     {
-        while (itr != _vec.end())
+        while (itr != _insertContainer.end())
         {
             itr->idx++;
             itr->diff++;
@@ -199,14 +208,14 @@ private:
     //iterator interface.
     friend class DDFieldIterator<IdxType, DDInsertField<IdxType, CachedElement>, CachedElement>;
             
-    typename std::vector<Element>::iterator beginItr()
+    typename InsertContainer::iterator beginItr()
     {
-        return _vec.begin();
+        return _insertContainer.begin();
     }
 
-    IdxType eval(IdxType idx, typename std::vector<Element>::iterator& biggerThanItr, bool& hasCacheElement, CachedElement& cachedElement)
+    IdxType eval(IdxType idx, typename InsertContainer::iterator& biggerThanItr, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        while (biggerThanItr != _vec.end() && biggerThanItr->idx <= idx)
+        while (biggerThanItr != _insertContainer.end() && biggerThanItr->idx <= idx)
         {
             biggerThanItr++;
         }
@@ -216,12 +225,12 @@ private:
     //
     //
     
-    IdxType evalImpl(IdxType idx, typename std::vector<Element>::iterator& biggerThanItr, bool& hasCacheElement, CachedElement& cachedElement)
+    IdxType evalImpl(IdxType idx, typename InsertContainer::iterator& biggerThanItr, bool& hasCacheElement, CachedElement& cachedElement)
     {
         hasCacheElement = false;
         
         //check for cached values.
-        if (biggerThanItr != _vec.end())
+        if (biggerThanItr != _insertContainer.end())
         {
             IdxType idxDiff = biggerThanItr->idx - idx - 1;
             
@@ -234,7 +243,7 @@ private:
             }
         }
         
-        if (biggerThanItr != _vec.begin())
+        if (biggerThanItr != _insertContainer.begin())
         {
             auto smallerOrEqual = biggerThanItr;
             smallerOrEqual--;
