@@ -165,10 +165,6 @@ public:
         
         BaseElement() : _base(0) {}
         
-        BaseElement(const BaseElement& baseElement) :
-            _base(baseElement._base)
-        {}
-
         void adjust() const
         {
             _base++;
@@ -190,10 +186,10 @@ public:
         
         Element() = default;
         
-        Element(Element& other) = delete;
-        
-        Element(const Element&& other) : _relIdx(other._relIdx)
-        {}
+        Element(IdxType idx, const Element&& element, const BaseElement<IdxType>& baseElement)
+        {
+            _relIdx = idx - baseElement.base();
+        }
         
         void adjust() const
         {
@@ -204,11 +200,6 @@ public:
         {
             //std::cout << "__caa " << baseElement.base() << std::endl;
             return _relIdx + baseElement.base();
-        }
-        
-        void decompose(IdxType idx, const BaseElement<IdxType>& baseElement) const
-        {
-            _relIdx = idx - baseElement.base();
         }
         
     private:

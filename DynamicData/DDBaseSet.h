@@ -22,10 +22,10 @@
 
 /*
  * Requirements class Element
+ * Element(IdxType idx, const Element&& element, const BaseElementType& baseElement)
  * Default const assing const.
  * Element(const Element&& other)
  * IdxType idxImp(const BaseElement<IdxType>& baseElement) const
- * void decompose(IdxType idx, const BaseElement<IdxType>& baseElement) const
 */
 
 //TODO rename BaseElementType.
@@ -70,19 +70,17 @@ private:
     typedef std::list<BaseElement> BaseSetType;
     typedef typename BaseSetType::iterator BaseSetPtr;
 
-    
+    //TODO try to have the client deleted uses mehts.
     class LeafElement : public Element
     {
     public:
         
         LeafElement(IdxType idxIN, const Element&& element, BaseSetPtr baseSetPtrIN) :
-            Element(std::move(element)),
+            Element(idxIN, std::move(element), *baseSetPtrIN),
             baseSetPtr(baseSetPtrIN),
             _hasBaseSetPtr(true),
             _fakeIdx(0)
-        {
-            Element::decompose(idxIN, *baseSetPtr);
-        }
+        {}
         
         LeafElement(IdxType idx) :
             _hasBaseSetPtr(false),
@@ -127,7 +125,7 @@ public:
     //assert that this idx is not present in this DDBaseSet!
     void insert(LeafSetPtr insertPtr, IdxType idx, const Element&& element)
     {
-        typename BaseSetType::iterator basePtr;
+        BaseSetPtr basePtr;
         
         //get the base ptr.
         if (_leafSet.size() == 0) basePtr = _baseSet.begin();
@@ -189,23 +187,9 @@ public:
         auto nextBaseSetPtr = basePtr;
         nextBaseSetPtr++;
         
-
-        //adjust the base elements.
-        auto currBasePtr = nextBaseSetPtr;
-        while (currBasePtr != _baseSet.end())
-        {
-            currBasePtr->adjust();
-            currBasePtr++;
-        }
         
-        
-        //adjust the leaf elements.
-        auto currPtr = insertPtr;
-        while(currPtr->baseSetPtr == basePtr)
-        {
-            currPtr->adjust();
-            currPtr++;
-        }
+        //adjust the nodes
+        adjustNodesImp(insertPtr, basePtr, nextBaseSetPtr);
         
         
         //insert the leaf element
@@ -213,6 +197,16 @@ public:
         
         //adjust the bucket size.
         basePtr->incrLeafElemCount();
+    }
+    
+    void adjust(LeafSetPtr leafPtr)
+    {
+        assert(leafPtr != _leafSet.end());
+        
+        auto basePtr = leafPtr->baseSetPtr;
+        basePtr++;
+        
+        adjustNodesImp(leafPtr, leafPtr->baseSetPtr, basePtr);
     }
     
     typename LeafSetType::iterator upperBound(IdxType idx)
@@ -261,6 +255,8 @@ public:
     //
     //
     
+    typedef typename LeafSetType::iterator iterator;
+    
 private:
     
     LeafSetType _leafSet;
@@ -274,6 +270,24 @@ private:
         _baseSet.insert(_baseSet.begin(),BaseElement());
     }
     
+    void adjustNodesImp(LeafSetPtr leafPtr, BaseSetPtr leafPtrsBasePtr, BaseSetPtr basePtr)
+    {
+        //adjust the base elements.
+        auto currBasePtr = basePtr;
+        while (currBasePtr != _baseSet.end())
+        {
+            currBasePtr->adjust();
+            currBasePtr++;
+        }
+        
+        //adjust the leaf elements.
+        auto currPtr = leafPtr;
+        while(currPtr->baseSetPtr == leafPtrsBasePtr)
+        {
+            currPtr->adjust();
+            currPtr++;
+        }
+    }
 };
             
 #endif
