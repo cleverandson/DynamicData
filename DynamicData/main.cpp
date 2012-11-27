@@ -19,6 +19,11 @@
 
 int main(int argc, const char * argv[])
 {
+    //Tests::testAssertConfig();
+    Tests::testBenchmarks();
+ 
+    
+    //old tests
     //Demo::demo();
     
     //Tests::mmapSpeedTest();
@@ -45,9 +50,7 @@ int main(int argc, const char * argv[])
     //Tests::testTempTest(false);
     //Tests::testTempTest(true);
     
-    
     //Tests::tester();
-    
     
     //Tests::testFileSizes();
     
@@ -57,13 +60,6 @@ int main(int argc, const char * argv[])
     //Tests::testDDDeleteField();
     //Tests::testDDInsertField();
     //Tests::testDDField();
-    
-    
-    
-    
-    //Tests::testDDBenchmarks();
-    
-    Tests::testAssertConfig();
     
     
     return 0;

@@ -91,6 +91,66 @@ public:
         
         DDBenchmarkRunner::runBenchmarks<RunnerConfigAssert>();
     }
+    
+    
+    class RunnerConfigBenchMark
+    {
+    public:
+        typedef unsigned int IndexType;
+        typedef IndexType IdxType;
+        
+        static const IdxType IndexSize = 100000;
+        static const bool Assert = false;
+        
+        static const IdxType RandomReads = IndexSize;
+        static const IdxType RandomReadWidth = IndexSize;
+        
+        static const IdxType SequentialReads = IndexSize;
+        
+        static const IdxType SequentialWrites = IndexSize;
+        
+        static const IdxType RandomWrites = IndexSize;
+        
+        static const IdxType RandomDeleteWrites = 9000;
+        
+        class IndexObj
+        {
+        public:
+            
+            static IndexObj rand()
+            {
+                static DDRandomGen<unsigned int> randGen = DDRandomGen<unsigned int>();
+                
+                IndexObj indexObj;
+                indexObj._id = randGen.randVal();
+                
+                return indexObj;
+            }
+            
+            unsigned int identifier()
+            {
+                return _id;
+            }
+            
+            bool operator== (const IndexObj& other) const
+            {
+                return _id == other._id;
+            }
+            
+        private:
+            unsigned int _id;
+            int arr[30];
+        };
+        
+    };
+    
+    
+    static void testBenchmarks()
+    {
+        system("rm -r data");
+        
+        DDBenchmarkRunner::runBenchmarks<RunnerConfigBenchMark>();
+    }
 
     
 //
