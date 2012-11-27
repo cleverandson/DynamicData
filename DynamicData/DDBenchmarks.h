@@ -363,6 +363,7 @@ public:
     {
         typedef DDIndexHandle<DDIndexWrapper> IndexHandleType;
         
+        /*
         static const bool AssertIndexHandle = false;
         
         typename IndexHandleTrait<Dummy, AssertIndexHandle>::type ddIndexHandle;
@@ -372,8 +373,8 @@ public:
         static const size_t SequentialReads = 100000;
         static const size_t SequentialWrites = 100000;
         static const size_t RandomWrites = 100000;
-        
-        /*
+        */
+     
         //assert config.
         static const bool AssertIndexHandle = true;
         
@@ -384,7 +385,7 @@ public:
         static const size_t SequentialReads = 10000;
         static const size_t SequentialWrites = 10000;
         static const size_t RandomWrites = 10000;
-        */
+        
         
         
         
@@ -413,11 +414,11 @@ public:
             <
                 typename IndexHandleTrait<Dummy, AssertIndexHandle>::type,
             
-            /*
+            
                 RandomReadBenchmark<RandomReads, DDIndexSize, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
                 SequentialReadBenchmark<SequentialReads, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
                 SequentialWriteBenchmark<SequentialWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>,
-            */    
+                
             
                 RandomWriteBenchmark<RandomWrites, typename IndexHandleTrait<Dummy, AssertIndexHandle>::type>
 

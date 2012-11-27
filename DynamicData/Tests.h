@@ -699,7 +699,7 @@ public:
     {
         system("rm -r data");
         
-        DDBenchmarks<unsigned long long,BenchObj,100000>::runBenchmarks();
+        DDBenchmarks<unsigned long long,BenchObj,10000>::runBenchmarks();
     }
     
     

@@ -64,6 +64,7 @@ public:
             idx = _deleteField.eval(idx);
             idx = _insertField.eval(idx, hasCacheElement, cachedElement);
         }
+        else hasCacheElement = false;
     
         return idx;
     }
