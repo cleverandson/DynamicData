@@ -15,6 +15,8 @@
 
 #include "DDFieldIterator.h"
 #include "DDBaseSet.h"
+#include "DDBaseVec.h"
+#include "DDUtils.h"
 
 template<typename IdxType, class CachedElement>
 class DDInsertField
@@ -48,7 +50,9 @@ private:
     {
     public:
         
-        Element2() = default;
+        //Element2() = default;
+        
+        Element2() : _relIdx(0), _relDiff(0) {}
         
         Element2(IdxType idxIN, IdxType diffIN, const CachedElement& cachedElement) :
             _relIdx(idxIN),
@@ -79,7 +83,7 @@ private:
             return _relDiff + baseElement.base();
         }
 
-        mutable std::deque<CachedElement> cachedElements;
+        mutable std::vector<CachedElement> cachedElements;
         
     private:
         mutable IdxType _relIdx;
@@ -89,25 +93,27 @@ private:
     template<class DDBaseSetLeafElement>
     static IdxType getDiff(DDBaseSetLeafElement& leafElement)
     {
-        return leafElement.diffImp(*leafElement.baseSetPtr);
+        return leafElement.diffImp(*leafElement.basePtr());
     }
     
-    typedef DDBaseSet<IdxType, Element2, BaseElement, 80> InsertContainer;
-
+    //typedef DDBaseSet<IdxType, Element2, BaseElement, 40> InsertContainer;
+    typedef DDBaseVec<IdxType, Element2, BaseElement, 15> InsertContainer;
+    
 public:
     
     DDInsertField() :
-        fieldItr(*this)
+        fieldItr(*this),
+        _ddBaseSetPtr(DDUtils::make_unique<InsertContainer>())
     {}
             
     DDInsertField(DDInsertField&& other) :
         fieldItr(*this),
-        _ddBaseSet(std::forward<InsertContainer>(other._ddBaseSet))
+        _ddBaseSetPtr(std::move(other._ddBaseSetPtr))
     {}
     
     void operator=(DDInsertField&& rhs)
     {
-        _ddBaseSet = std::forward<InsertContainer>(rhs._ddBaseSet);
+        _ddBaseSetPtr = std::move(rhs._ddBaseSetPtr);
     }
     
     DDInsertField(const DDInsertField&) = delete;
@@ -118,27 +124,28 @@ public:
             
     void addIdx(IdxType idx, const CachedElement& cachedElement)
     {
-        auto biggerThanItr = _ddBaseSet.upperBound(idx);
+        auto biggerThanItr = _ddBaseSetPtr->upperBound(idx);
      
         //
         // shadow case.
         //
-        if (biggerThanItr != _ddBaseSet.end() && idx > (biggerThanItr->idx() - biggerThanItr->cachedElements.size()))
+        if (biggerThanItr != _ddBaseSetPtr->end() && idx > (biggerThanItr->idx() - biggerThanItr->cachedElements.size()))
         {
-            auto itr = biggerThanItr->cachedElements.begin();
+            auto itr = biggerThanItr->cachedElements.rbegin();
             
             itr += biggerThanItr->idx() - idx + 1;
             
-            biggerThanItr->cachedElements.insert(itr, cachedElement);
+            biggerThanItr->cachedElements.insert(itr.base(), cachedElement);
             
-            _ddBaseSet.adjust(biggerThanItr);
+            _ddBaseSetPtr->adjust(biggerThanItr);
         }
         else
         {
             bool caseMached = false;
             IdxType lastDiff = 0;
             
-            if (biggerThanItr != _ddBaseSet.begin())
+            
+            if (biggerThanItr != _ddBaseSetPtr->begin())
             {
                 auto smallerOrEqual = biggerThanItr;
                 smallerOrEqual--;
@@ -150,12 +157,12 @@ public:
                 //
                 if (idx == smallerOrEqual->idx())
                 {
-                    _ddBaseSet.adjust(smallerOrEqual);
+                    _ddBaseSetPtr->adjust(smallerOrEqual);
                     
-                    auto itr = smallerOrEqual->cachedElements.begin();
+                    auto itr = smallerOrEqual->cachedElements.rbegin();
                     itr++;
                     
-                    smallerOrEqual->cachedElements.insert(itr, cachedElement);
+                    smallerOrEqual->cachedElements.insert(itr.base(), cachedElement);
                     
                     caseMached = true;
                 }
@@ -164,27 +171,28 @@ public:
                 //
                 else if (idx == smallerOrEqual->idx() + 1)
                 {
-                    _ddBaseSet.adjust(smallerOrEqual);
+                    _ddBaseSetPtr->adjust(smallerOrEqual);
                     
-                    smallerOrEqual->cachedElements.insert(smallerOrEqual->cachedElements.begin(), cachedElement);
+                    smallerOrEqual->cachedElements.insert(smallerOrEqual->cachedElements.end(), cachedElement);
                     
                     caseMached = true;
                 }
             }
-            
+        
             //
             //insert case.
             //
             if (!caseMached)
             {
-                _ddBaseSet.insert(biggerThanItr, idx, Element2(idx, lastDiff + 1, cachedElement));
+                //std::cout << "*__" << std::endl;
+                _ddBaseSetPtr->insert(biggerThanItr, idx, Element2(idx, lastDiff + 1, cachedElement));
             }
         }
     }
             
     IdxType eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        auto biggerThanItr = _ddBaseSet.equalRange(idx);
+        auto biggerThanItr = _ddBaseSetPtr->equalRange(idx);
         
         return evalImpl(idx, biggerThanItr, hasCacheElement, cachedElement);
     }
@@ -207,11 +215,11 @@ public:
     
     void clear()
     {
-        _ddBaseSet.clear();
+        _ddBaseSetPtr->clear();
     }
 
 private:
-    InsertContainer _ddBaseSet;
+    std::unique_ptr<InsertContainer> _ddBaseSetPtr;
     
     //
     //iterator interface.
@@ -219,12 +227,12 @@ private:
             
     typename InsertContainer::iterator beginItr()
     {
-        return _ddBaseSet.begin();
+        return _ddBaseSetPtr->begin();
     }
 
     IdxType eval(IdxType idx, typename InsertContainer::iterator& biggerThanItr, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        while (biggerThanItr != _ddBaseSet.end() && biggerThanItr->idx() <= idx)
+        while (biggerThanItr != _ddBaseSetPtr->end() && biggerThanItr->idx() <= idx)
         {
             biggerThanItr++;
         }
@@ -238,7 +246,7 @@ private:
     {
         hasCacheElement = false;
         
-        if (biggerThanItr != _ddBaseSet.end())
+        if (biggerThanItr != _ddBaseSetPtr->end())
         {
             IdxType idxDiff = biggerThanItr->idx() - idx - 1;
             
@@ -247,12 +255,17 @@ private:
             
             if (idxDiff < numbOfElements)
             {
-                cachedElement = biggerThanItr->cachedElements[idxDiff];
+                //cachedElement = biggerThanItr->cachedElements[idxDiff];
+                
+                auto itr = biggerThanItr->cachedElements.rbegin();
+                itr += idxDiff;
+                cachedElement = (*itr);
+                
                 hasCacheElement = true;
             }
         }
         
-        if (biggerThanItr != _ddBaseSet.begin())
+        if (biggerThanItr != _ddBaseSetPtr->begin())
         {
             auto smallerOrEqual = biggerThanItr;
             smallerOrEqual--;

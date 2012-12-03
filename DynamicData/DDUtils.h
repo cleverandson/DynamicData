@@ -22,6 +22,8 @@ static void PrintDBUG(std::string className, std::string line){ std::cout << cla
 
 static void PrintERROR(std::string line){ std::cout << "ERROR :" << line << std::endl; }
 
+
+
 class DDUtils
 {
 public:
@@ -40,6 +42,12 @@ public:
         }
         
         return _type;
+    }
+    
+    template<typename T, typename ...Args>
+    static std::unique_ptr<T> make_unique( Args&& ...args )
+    {
+        return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
     }
 };
 

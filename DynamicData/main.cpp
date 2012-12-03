@@ -23,7 +23,7 @@ int main(int argc, const char * argv[])
     Tests::testBenchmarks();
  
     
-    //Tests::testDDBaseSet();
+    //Tests::testDDBaseVec();
     
     
     //Tests::testDDBaseSet();

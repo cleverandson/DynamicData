@@ -22,6 +22,7 @@
 #include "DDBenchmarks.h"
 #include "DDRandomGen.h"
 #include "DDBaseSet.h"
+#include "DDBaseVec.h"
 
 class Tests
 {
@@ -277,48 +278,66 @@ public:
         }
     };
     
-    
-    
-    static void testDDBaseSet()
+    /*
+    //DDBaseVec
+    static void testDDBaseVec()
     {
         typedef unsigned int IdxType;
+        DDBaseVec<IdxType, Element<IdxType>, BaseElement<IdxType>, 49> ddBaseVec;
         
+        IdxType idx = 1;
+        auto itr = ddBaseVec.upperBound(idx);
+        ddBaseVec.insert(itr, idx, Element<IdxType>());
+    }
+    */
+    
+    static void testDDBaseVec()
+    {
+        typedef unsigned int IdxType;
+        typedef DDBaseVec<IdxType, Element<IdxType>, BaseElement<IdxType>, 4> BaseVecType;
         
         DBugSet<IdxType> dBugSet;
         
-        DDBaseSet<IdxType, Element<IdxType>, BaseElement<IdxType>, 49> ddBaseSet;
+        std::unique_ptr<BaseVecType>  ddBasePtr2(DDUtils::make_unique<BaseVecType>());
+        auto ddBasePtr = std::move(ddBasePtr2);
         
-        /*
-        auto printDDBaseSet = [&ddBaseSet]()
+        
+        //DDBaseVec<IdxType, Element<IdxType>, BaseElement<IdxType>, 4> ddBaseSet;
+        
+        
+        
+        auto printDDBaseSet = [&ddBasePtr]()
         {
-            auto currBaseSetPtr = ddBaseSet.baseBegin();
+            auto currBaseSetPtr = ddBasePtr->baseBegin();
             bool diplayBase = false;
-            if (currBaseSetPtr != ddBaseSet.baseEnd())
+            if (currBaseSetPtr != ddBasePtr->baseEnd())
             {
                 diplayBase = true;
             }
             
+            
             std::cout << "leaf " << std::endl;
-            for (auto itr = ddBaseSet.begin(); itr != ddBaseSet.end(); itr++)
+            for (auto itr = ddBasePtr->begin(); itr != ddBasePtr->end(); itr++)
             {
-                if (diplayBase || itr->baseSetPtr != currBaseSetPtr)
+                if (diplayBase || itr->basePtr() != currBaseSetPtr)
                 {
-                    std::cout << " base " << itr->baseSetPtr->base() << std::endl;
-                    currBaseSetPtr = itr->baseSetPtr;
+                    std::cout << " base " << itr->basePtr()->baseHandleIdx() << " bb " << itr->basePtr()->base() << " _elems_ " << itr->basePtr()->leafElemCount() << std::endl;
+                    currBaseSetPtr = itr->basePtr();
                 }
                 
-                std::cout << " idx " << itr->idx() << std::endl;
+                std::cout << " idx " << itr->idx() << " _baseidx_ " << itr->basePtr()->baseContainerIdx() << std::endl;
             
                 diplayBase = false;
             }
         
         };
-        */
+        
+        
         auto checkSets = [&]()
         {
             auto itrDBug = dBugSet.begin();
             
-            for (auto itr = ddBaseSet.begin(); itr != ddBaseSet.end(); itr++)
+            for (auto itr = ddBasePtr->begin(); itr != ddBasePtr->end(); itr++)
             {
                 //std::cout << "__idx " << itr->idx() << "__dbg " << itrDBug->idx() << std::endl;
 
@@ -328,30 +347,42 @@ public:
         
         };
         
-        IdxType setSize = 7001;
+        IdxType setSize = 1001;
         IdxType stepSize = 7;
         IdxType idx;
         bool check;
         
-        for (IdxType i=0; i<setSize*20; i++)
+        for (IdxType i=0; i<setSize; i++)
         {
             idx = (i*stepSize) % setSize;
             check = dBugSet.insert(idx);
         
             if (check)
             {
-                auto itr = ddBaseSet.upperBound(idx);
-                ddBaseSet.insert(itr, idx, Element<IdxType>());
+                auto itr = ddBasePtr->upperBound(idx);
+                ddBasePtr->insert(itr, idx, Element<IdxType>());
             }
         }
         
-        assert(ddBaseSet.size() == dBugSet.size());
+        assert(ddBasePtr->size() == dBugSet.size());
        
+        //printDDBaseSet();
+        
         checkSets();
         
         std::cout << "_done_" << std::endl;
     }
   
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     
     
