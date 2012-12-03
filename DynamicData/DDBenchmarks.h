@@ -220,6 +220,7 @@ public:
                 indexHandle.deleteIdx(randDelIdx);
             }
             
+            /*
             for (int i=0; i<NumOfWriteDeletes; i++)
             {
                 indexSize = indexHandle.size();
@@ -227,6 +228,7 @@ public:
                 
                 indexHandle.insertIdx(randDelIdx, StoredType::rand());
             }
+            */
             
             stats.benchmarkRes("RandomWriteDeleteBenchmark", duration.elapsed(), 2*NumOfWriteDeletes);
         }
@@ -461,10 +463,13 @@ public:
             <
             IndexHandleType,
             
+            
             SequentialReadBMType,
             RandomReadBMType,
             SequentialWriteBMType,
             RandomWriteBMType,
+            
+             
             RandomWriteDeleteBMType
             
             //... more benchmarks.

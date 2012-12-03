@@ -17,7 +17,6 @@
  * Requirements class BaseElementType
  * Default const assing const.
  * void adjust() const
- * IdxType base() const
 */
 
 /*
@@ -212,6 +211,38 @@ public:
         basePtr->incrLeafElemCount();
     }
     
+    LeafSetPtr erase(LeafSetPtr deletePtr)
+    {
+        assert(deletePtr != _leafSet.end());
+        
+        BasePtr basePtr = deletePtr->basePtr();
+    
+        //adjust or erase the base ptr.
+        if (basePtr->leafElemCount() == 1)
+        {
+            _baseSet.erase(basePtr);
+        }
+        else
+        {
+            basePtr->setLeafElemCount(basePtr->leafElemCount() - 1);
+        }
+        
+        _leafSet.erase(deletePtr++);
+        
+        return deletePtr;
+    }
+    
+    void adjust(LeafSetPtr leafPtr, std::function<void (BaseElementType&&)> baseAdjustClosure,  std::function<void (Element&&)> leafAdjustClosure)
+    {
+        assert(leafPtr != _leafSet.end());
+        
+        auto basePtr = leafPtr->basePtr();
+        basePtr++;
+        
+        adjustNodesImp(leafPtr, leafPtr->basePtr(), basePtr, baseAdjustClosure, leafAdjustClosure);
+    }
+    
+    //TODO unify with upper funct.
     void adjust(LeafSetPtr leafPtr)
     {
         assert(leafPtr != _leafSet.end());
@@ -283,6 +314,27 @@ private:
         _baseSet.insert(_baseSet.begin(),BaseElement());
     }
     
+    void adjustNodesImp(LeafSetPtr leafPtr, BasePtr leafPtrsBasePtr, BasePtr basePtr, std::function<void (BaseElementType&&)> baseAdjustClosure, std::function<void (Element&&)> leafAdjustClosure)
+    {
+        //adjust the base elements.
+        auto currBasePtr = basePtr;
+        while (currBasePtr != _baseSet.end())
+        {
+            baseAdjustClosure((BaseElementType)*currBasePtr);
+            currBasePtr++;
+        }
+        
+        //adjust the leaf elements.
+        auto currPtr = leafPtr;
+        while(currPtr->basePtr() == leafPtrsBasePtr)
+        {
+            leafAdjustClosure((Element)*currPtr);
+            
+            currPtr++;
+        }
+    }
+    
+    //TODO unify with upper funct.
     void adjustNodesImp(LeafSetPtr leafPtr, BasePtr leafPtrsBasePtr, BasePtr basePtr)
     {
         //adjust the base elements.
