@@ -100,7 +100,7 @@ public:
         typedef unsigned int IndexType;
         typedef IndexType IdxType;
         
-        static const IdxType IndexSize = 100000;
+        static const IdxType IndexSize = 1000000;
         static const bool Assert = false;
         
         static const IdxType RandomReads = IndexSize;
@@ -111,8 +111,8 @@ public:
         static const IdxType SequentialWrites = IndexSize;
         
         static const IdxType RandomWrites = IndexSize;
-        
-        static const IdxType RandomDeleteWrites = 9000;
+    
+        static const IdxType RandomDeleteWrites = 50000;
         
         class IndexObj
         {
@@ -294,12 +294,13 @@ public:
     static void testDDBaseVec()
     {
         typedef unsigned int IdxType;
-        typedef DDBaseVec<IdxType, Element<IdxType>, BaseElement<IdxType>, 4> BaseVecType;
+        //typedef DDBaseVec<IdxType, Element<IdxType>, BaseElement<IdxType>, 4> BaseVecType;
+        typedef DDBaseSet<IdxType, Element<IdxType>, BaseElement<IdxType>, 4> BaseVecType;
         
         DBugSet<IdxType> dBugSet;
         
-        std::unique_ptr<BaseVecType>  ddBasePtr2(DDUtils::make_unique<BaseVecType>());
-        auto ddBasePtr = std::move(ddBasePtr2);
+        std::unique_ptr<BaseVecType>  ddBasePtr(DDUtils::make_unique<BaseVecType>());
+        //auto ddBasePtr = std::move(ddBasePtr2);
         
         
         //DDBaseVec<IdxType, Element<IdxType>, BaseElement<IdxType>, 4> ddBaseSet;
@@ -321,12 +322,17 @@ public:
             {
                 if (diplayBase || itr->basePtr() != currBaseSetPtr)
                 {
-                    std::cout << " base " << itr->basePtr()->baseHandleIdx() << " bb " << itr->basePtr()->base() << " _elems_ " << itr->basePtr()->leafElemCount() << std::endl;
+                    std::cout << " base " << std::endl;
+                    
+                    //std::cout << " base " << itr->basePtr()->baseHandleIdx() << " bb " << itr->basePtr()->base() << " _elems_ " << itr->basePtr()->leafElemCount() << std::endl;
+                    
+                    
                     currBaseSetPtr = itr->basePtr();
                 }
                 
-                std::cout << " idx " << itr->idx() << " _baseidx_ " << itr->basePtr()->baseContainerIdx() << std::endl;
-            
+                //std::cout << " idx " << itr->idx() << " _baseidx_ " << itr->basePtr()->baseContainerIdx() << std::endl;
+                std::cout << " idx " << itr->idx() << std::endl;
+                
                 diplayBase = false;
             }
         
@@ -347,7 +353,7 @@ public:
         
         };
         
-        IdxType setSize = 1001;
+        IdxType setSize = 7001;
         IdxType stepSize = 7;
         IdxType idx;
         bool check;
@@ -364,9 +370,14 @@ public:
             }
         }
         
+        
         assert(ddBasePtr->size() == dBugSet.size());
        
+        
         //printDDBaseSet();
+        
+        //std::cout << "-----" << std::endl;
+        //std::cout << "" << std::endl;
         
         checkSets();
         

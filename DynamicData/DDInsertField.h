@@ -96,8 +96,8 @@ private:
         return leafElement.diffImp(*leafElement.basePtr());
     }
     
-    //typedef DDBaseSet<IdxType, Element2, BaseElement, 40> InsertContainer;
-    typedef DDBaseVec<IdxType, Element2, BaseElement, 15> InsertContainer;
+    typedef DDBaseSet<IdxType, Element2, BaseElement, 40> InsertContainer;
+    //typedef DDBaseVec<IdxType, Element2, BaseElement, 15> InsertContainer;
     
 public:
     
