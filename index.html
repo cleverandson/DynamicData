@@ -28,12 +28,12 @@
         </ul>
       </header>
       <section>
-        <h3>Introduction</h3>
+        <h2>Introduction</h2>
 
 <p>Dynamic Data (DD) is a reference implementation for a persistent on disc Concurrent Mapped Vector CMV. Please read on further down for a definition of a CMV data structure. The DD data structure is useful in situations where a big number of objects has to be stored in an array like data structure and fast random read access is needed, as well as frequent insert and delete operations with minimal lock time. 
 Usually B-trees or Skip Lists are employed in these kind of situations, with the disadvantage that random reads have a complexity of O(log(n)), where the DD data structure can achieve O(0) complexity on random reads in many situations where reads are much more frequent then delete and write operations.</p>
 
-<p>Setup</p>
+<h3>Setup</h3>
 
 <p>DD is a header file only library which was developed on OSX and Xcode. The code is standard C++11 compatible, the only non stl component used is , which is used to mmap binary files on disc. We suppose that the library should run on most Unix systems, but it was only tested on OSX. </p>
 
@@ -41,9 +41,9 @@ Usually B-trees or Skip Lists are employed in these kind of situations, with the
 
 <p>We believe that this kind of data structure did not exist until now (at least we could not find any similar work at all). Thats why we gave it the name Concurrent Mapped Vector. It might not be the most pretty name, but it should reflect that what we have is an array like data structure which can only work effectively in a multithreaded environment. </p>
 
-<h3>Concurrent Mapped Vector</h3>
+<h2>Concurrent Mapped Vector</h2>
 
-<p>Introduction</p>
+<h3>Introduction</h3>
 
 <p>The Concurrent Mapped Vector (CMV) is a data structure, which exposes a similar subset of operations found in vector classes like in the std::vector class. </p>
 
@@ -97,25 +97,37 @@ Let P_N be the pending elements. Then the complexity for all operations is </p>
 
 <p>Because of fast multithreaded hardware one can imagine that the frequency operations can occur on CMV can be quite high and still P_N can be kept small and constant.</p>
 
-<p>The Dynamic Data Project (DD)</p>
+<h3>The Dynamic Data Project (DD)</h3>
 
 <p>The Dynamic Data Project is a reference implementation for a MVC data structure, where the core memory is kept persistently on disc. Our proposed design allows with relatively simple modifications to have the core memory stored on disc or in the systems RAM. To keep the project simple we decided to only implement the on disc storage behaviour. Our initial thought was also to use  DDP as a simple database rather than an in memory data structure. The DDP is still a prototype and should probably be tested more to be used in production work. There are still many performance improvements which could be implemented. But our main focus in this project was to reduce the BACKGROUND_OPS because this gives the biggest performance boost.
 We have to mention that the complexity for the insert and delete operations is O(log(P_N) + P_N) rather than O(log(P_N)). But this shortcoming could be overcome if we used a special skip list in our implementation. </p>
 
-<p>Implementation Overview</p>
+<h4>Implementation Overview</h4>
 
 <p>First we describe the components used and later how the different operations are implemented using these basic components.</p>
 
 <p>We use 2 in memory objects which cache the insert and delete operations. They both accept indexes and transform them based on the already inserted or deleted elements. A backgound process processes these fields and writes the data to disk regularly. The insert field also caches the the inserted value.</p>
 
-<p><img src="db_obj_del_field.png" alt="delete_field"><img src="db_obj_insert_field.png" alt="insert_field"></p>
+<h6>Delete Field</h6>
+
+<p><img src="db_obj_del_field.png" alt="delete_field"></p>
+
+<h6>Insert Field</h6>
+
+<p><img src="db_obj_insert_field.png" alt="insert_field"></p>
 
 <p>For accessing the elements on disc we use an Index Map Array as well as a Value Array.
 The Index Map Array maps the indexes to the Value Array. When inserting and deleting elements only the mappings can be adjusted and the newly inserted values can be added at the end of the Value Array.</p>
 
-<p><img src="db_obj_mapped_arr.png" alt="index_map_array"><img src="db_obj_val_arr.png" alt="value_map_array"></p>
+<h6>Index Map Array</h6>
 
-<p>The different Operations </p>
+<p><img src="db_obj_mapped_arr.png" alt="index_map_array"></p>
+
+<h6>Value Array</h6>
+
+<p><img src="db_obj_val_arr.png" alt="value_map_array"></p>
+
+<h4>The different Operations</h4>
 
 <p>To cache the inserted and deleted values, the insert and delete fields will be called in a serial fashion. All inserts and deletes are sorted, in this way the operations necessary to perform for the background thread can be optimised. This is because multiple insert and delete operations on there own can be cached as a list of offset values in the Index Map Array.
 First the delete values are stored and then the insert values. In order to calculate the index which has to be cached for an insert operation the delete field has to be queried to transform the index.   </p>
@@ -134,6 +146,8 @@ The complexity for this operation involves two O(log(n)) operations for the inde
 <h6>Get Operation</h6>
 
 <p><img src="db_get_op.png" alt="get_op"></p>
+
+<h6>The Background Process</h6>
 
 <p><img src="db_bg_job.png" alt="bg_process"></p>
 
