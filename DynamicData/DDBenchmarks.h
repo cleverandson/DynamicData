@@ -215,6 +215,8 @@ public:
         {
             indexHandle.fillDDIndex();
             
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            
             Duration duration;
             
             IdxType randDelIdx;
@@ -452,11 +454,7 @@ public:
         //
         //Benchmark types.
         typedef typename BenchmarkType::template SequentialReadBenchmark<RunnerConfig::SequentialReads, IndexHandleType> SequentialReadBMType;
-        
-        
         typedef typename BenchmarkType::template RandomReadBenchmark<RunnerConfig::RandomReads, RunnerConfig::RandomReadWidth, IndexHandleType> RandomReadBMType;
-        
-        
         typedef typename BenchmarkType::template SequentialWriteBenchmark<RunnerConfig::SequentialWrites, IndexHandleType> SequentialWriteBMType;
         typedef typename BenchmarkType::template RandomWriteBenchmark<RunnerConfig::RandomWrites, IndexHandleType> RandomWriteBMType;
         typedef typename BenchmarkType::template RandomWriteDeleteBenchmark<RunnerConfig::RandomDeleteWrites, IndexHandleType> RandomWriteDeleteBMType;

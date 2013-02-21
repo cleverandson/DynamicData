@@ -53,7 +53,7 @@ public:
         //uncomment to remove the persisted data.
         system("rm -r data");
         
-        //initialize a ddIndex
+        //initialize a ddIndex with index type unsigend long and value type unisgend long
         DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
         
         //check if it allready has cached data included.
