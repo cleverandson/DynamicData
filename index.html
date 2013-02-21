@@ -120,17 +120,20 @@ The Index Map Array maps the indexes to the Value Array. When inserting and dele
 <p>To cache the inserted and deleted values, the insert and delete fields will be called in a serial fashion. All inserts and deletes are sorted, in this way the operations necessary to perform for the background thread can be optimised. This is because multiple insert and delete operations on there own can be cached as a list of offset values in the Index Map Array.
 First the delete values are stored and then the insert values. In order to calculate the index which has to be cached for an insert operation the delete field has to be queried to transform the index.   </p>
 
-<p>Insert Operation
-<img src="db_insert_op.png" alt="insert_op"></p>
+<h6>Insert Operation</h6>
 
-<p>Delete Operation
-<img src="db_del_op.png" alt="delete_op"></p>
+<p><img src="db_insert_op.png" alt="insert_op"></p>
+
+<h6>Delete Operation</h6>
+
+<p><img src="db_del_op.png" alt="delete_op"></p>
 
 <p>To access Elements in the data structure all Objects described have to be used. A query for an index idx has to pass the delete field first, to check whether it has to be adjusted. Then it has to pass the insert field which checks if the value for idx is cached. if so the value will be returned, in all other cases the again transformed index is passed to the Index Map Array, where it is again transformed to the index which can access the Value array.
 The complexity for this operation involves two O(log(n)) operations for the index and delete fields and two disc accesses. Thus the Get Operation has an O(log(n)) complexity, where n are the pending elements not yet written to disc by the background process.</p>
 
-<p>Get Operation
-<img src="db_get_op.png" alt="get_op"></p>
+<h6>Get Operation</h6>
+
+<p><img src="db_get_op.png" alt="get_op"></p>
 
 <p><img src="db_bg_job.png" alt="bg_process"></p>
 
