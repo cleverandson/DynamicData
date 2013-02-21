@@ -1,10 +1,21 @@
-//
-//  Demo.h
-//  DynamicData
-//
-//  Created by mich2 on 9/21/12.
-//  Copyright (c) 2012 -. All rights reserved.
-//
+/*
+ 
+    This file is part of DynamicData.
+
+    DynamicData is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Foobar is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ 
+*/
 
 #ifndef DynamicData_Demo_h
 #define DynamicData_Demo_h
@@ -42,7 +53,7 @@ public:
         //uncomment to remove the persisted data.
         system("rm -r data");
         
-        //initialize a ddIndex
+        //initialize a ddIndex with index type unsigend long and value type unisgend long
         DDIndex<unsigned long, unsigned long> ddIndex(1, 0, 1, 2);
         
         //check if it allready has cached data included.

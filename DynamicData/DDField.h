@@ -1,10 +1,21 @@
-//
-//  DDField.h
-//  DynamicData
-//
-//  Created by mich2 on 10/31/12.
-//  Copyright (c) 2012 -. All rights reserved.
-//
+/*
+
+    This file is part of DynamicData.
+
+    DynamicData is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Foobar is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
 
 #ifndef DynamicData_DDField_h
 #define DynamicData_DDField_h
@@ -19,13 +30,16 @@ class DDField
 {
 public:
     
-    DDField() {}
+    DDField() : _fieldSize(0) {}
     
     DDField(DDField<IdxType, CachedElement>&& other) :
         _insertField(std::forward<DDInsertField<IdxType, CachedElement>>(other._insertField)),
         _deleteField(std::forward<DDDeleteField<IdxType>>(other._deleteField)),
-        _fieldSize(0)
+        _fieldSize(other._fieldSize)
     {}
+    
+    //TODO implement.
+    //DDField& operator=(DDField &&) = default;
     
     void operator=(DDField<IdxType, CachedElement>&& rhs)
     {
@@ -56,8 +70,14 @@ public:
     
     IdxType eval(IdxType idx, bool& hasCacheElement, CachedElement& cachedElement)
     {
-        idx = _deleteField.eval(idx);
-        return _insertField.eval(idx, hasCacheElement, cachedElement);
+        if (_fieldSize > 0)
+        {
+            idx = _deleteField.eval(idx);
+            idx = _insertField.eval(idx, hasCacheElement, cachedElement);
+        }
+        else hasCacheElement = false;
+    
+        return idx;
     }
     
     void startItr()
@@ -85,6 +105,7 @@ public:
     {
         _insertField.clear();
         _deleteField.clear();
+        _fieldSize = 0;
     }
     
     size_t size()

@@ -1,10 +1,21 @@
-//
-//  DDDeleteField.h
-//  DynamicData
-//
-//  Created by mich2 on 10/30/12.
-//  Copyright (c) 2012 -. All rights reserved.
-//
+/*
+ 
+    This file is part of DynamicData.
+
+    DynamicData is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Foobar is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ 
+*/
 
 #ifndef DynamicData_DDDeleteField_h
 #define DynamicData_DDDeleteField_h
@@ -72,7 +83,8 @@ private:
         }
     };
     
-    typedef std::set<CompoundElement, Comparator> SetType;
+    typedef std::set<CompoundElement, Comparator> DeleteContainer;
+    //typedef std::vector<CompoundElement> DeleteContainer;
     
             
 public:
@@ -82,13 +94,13 @@ public:
     {}
     
     DDDeleteField(DDDeleteField&& other) :
-        _set(std::forward<std::set<CompoundElement, Comparator>>(other._set)),
+        _set(std::forward<DeleteContainer>(other._set)),
         fieldItr(*this)
     {}
             
     void operator=(DDDeleteField<IdxType>&& rhs)
     {
-        _set = std::forward<std::set<CompoundElement, Comparator>>(rhs._set);
+        _set = std::forward<DeleteContainer>(rhs._set);
     }
             
     DDDeleteField(const DDDeleteField&) = delete;
@@ -108,15 +120,18 @@ public:
         
         CompoundElement ce(idx);
         
-        auto biggerThanItr = std::upper_bound(_set.begin(), _set.end(), ce, Comparator());
+        //auto biggerThanItr = std::upper_bound(_set.begin(), _set.end(), ce, Comparator());
+        auto biggerThanItr = _set.upper_bound(ce);
         
         //resolve triangle case
         bool nodeModified = false;
         bool hasRightNode = false;
         auto smallerEqualItr = biggerThanItr;
         
+        
+        
         //look for right triangle node.
-        if (biggerThanItr->idx() > 0 && biggerThanItr->idx() - 1 == idx)
+        if (biggerThanItr != _set.end() && biggerThanItr->idx() > 0 && biggerThanItr->idx() - 1 == idx)
         {
             ce.setDiff(biggerThanItr->diff() + 1);
             _set.erase(biggerThanItr++);
@@ -160,7 +175,9 @@ public:
     
     IdxType adjustFieldAndEval(IdxType insertIdx)
     {
-        auto biggerThanItr = std::upper_bound(_set.begin(), _set.end(), CompoundElement(insertIdx), Comparator());
+        //auto biggerThanItr = std::upper_bound(_set.begin(), _set.end(), CompoundElement(insertIdx), Comparator());
+        auto biggerThanItr = _set.upper_bound(CompoundElement(insertIdx));
+        
         auto smallerEqualItr = biggerThanItr;
         
         if (biggerThanItr != _set.begin()) smallerEqualItr--;
@@ -178,7 +195,7 @@ public:
     
     //
     //iterator interface.
-    typedef typename std::set<CompoundElement, Comparator>::iterator BoundItr;
+    typedef typename DeleteContainer::iterator BoundItr;
     DDFieldIterator<IdxType, DDDeleteField<IdxType>, Dummy> fieldItr;
     //
             
@@ -187,6 +204,7 @@ public:
         if (_set.size() > 0)
         {
             auto itr = _set.upper_bound(CompoundElement(idx));
+            //auto itr = std::upper_bound(_set.begin(), _set.end(), CompoundElement(idx), Comparator());
             
             if (itr != _set.begin())
             {
@@ -232,9 +250,10 @@ public:
     */
     
 private:
-    SetType _set;
+    //TODO rename set.
+    DeleteContainer _set;
     
-    void adjustIdxs(typename std::set<CompoundElement>::iterator& itr)
+    void adjustIdxs(typename DeleteContainer::iterator& itr)
     {
         while (itr != _set.end())
         {
@@ -248,12 +267,12 @@ private:
     //iterator interface.
     friend class DDFieldIterator<IdxType, DDDeleteField<IdxType>, Dummy>;
             
-    typename SetType::iterator beginItr()
+    typename DeleteContainer::iterator beginItr()
     {
         return _set.begin();
     }
     
-    IdxType eval(IdxType idx, typename SetType::iterator& itr)
+    IdxType eval(IdxType idx, typename DeleteContainer::iterator& itr)
     {
         while (itr != _set.end() && itr->idx() <= idx) itr++;
         

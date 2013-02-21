@@ -1,10 +1,21 @@
-//
-//  DDRandomGen.h
-//  DynamicData
-//
-//  Created by mich2 on 11/12/12.
-//  Copyright (c) 2012 -. All rights reserved.
-//
+/*
+ 
+    This file is part of DynamicData.
+
+    DynamicData is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Foobar is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
+ 
+*/
 
 #ifndef DynamicData_DDRandomGen_h
 #define DynamicData_DDRandomGen_h
@@ -18,7 +29,7 @@ public:
     
     DDRandomGen() : _distribution(0, std::numeric_limits<ValueType>::max()) {}
     
-    DDRandomGen(size_t startRange, size_t endRange) : _distribution(startRange, endRange) {}
+    DDRandomGen(ValueType startRange, ValueType endRange) : _distribution(startRange, endRange) {}
     
     ValueType randVal() { return _distribution(DDRandomGen::engine()); }
     
@@ -27,7 +38,7 @@ private:
     
     static std::mt19937& engine()
     {
-        std::random_device rd;
+        static std::random_device rd;
         static std::mt19937 engine(rd());
         return engine;
     }
