@@ -44,6 +44,7 @@
 #include "DDRandomGen.h"
 #include "DDBaseSet.h"
 #include "DDBaseVec.h"
+#include "DDIndexedList.h"
 
 class Tests
 {
@@ -298,6 +299,31 @@ public:
             }
         }
     };
+
+    
+    class TestNode
+    {
+        
+    };
+
+    void static testDDIndexedList()
+    {
+        typedef unsigned int IndexType;
+        DDIndexedList<TestNode, IndexType> index;
+        
+        index.insert(1, TestNode());
+        
+        //LeafItr [getLowerLeafItr(IndexType index, IndexType& offset)
+    
+        IndexType offset = 0;
+        index.getLowerLeafItr(1, offset);
+        
+        //(IndexType index, NodeType node2)
+        index.insert(1, TestNode());
+        
+        
+    }
 };
+
 
 #endif

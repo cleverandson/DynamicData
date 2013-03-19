@@ -607,16 +607,20 @@ private:
         YType yObj;
         
         //TODO check what happens if indexSize == 0!!
-        IdxType tailIdx = indexSize - 1;
+        //IdxType tailIdx = indexSize - 1;
         
         IdxType remapIdx = 0;
         
-        assert(deletedIdxs2.size() >= remapIdxs.size());
+        assert(deletedIdxs2.size() == remapIdxs.size());
         
         for (IdxType i = 0; i< deletedIdxs2.size() > 0; i++)
         {
             std::unique_lock<std::mutex> lock(_yValMutex);
             
+            idx = remapIdxs[remapIdx];
+            remapIdx++;
+            
+            /*
             if (remapIdxs.size() > remapIdx)
             {
                 idx = remapIdxs[remapIdx];
@@ -627,7 +631,7 @@ private:
                 idx = tailIdx;
                 tailIdx--;
             }
-            
+            */
             
             mvidx = _doubleSyncedMMapWrapper.getBack(idx);
             

@@ -42,11 +42,11 @@ int main(int argc, const char * argv[])
 {
     //runs tests on the different benchmarks and checks the inserted
     //values for consistency.
-    //Tests::testAssertConfig();
+    Tests::testAssertConfig();
     
     //runs the different benchmarks in random order and prints out the
     //results
-    Tests::testBenchmarks();
+    //Tests::testBenchmarks();
  
     return 0;
 }
